@@ -1,0 +1,17 @@
+REASONING_THREE_BLOCK_NONCONSECUTIVE_RATIONAL_V1
+support_residues=0,1,3
+normalized_shape_count=4420
+cyclotomic_shape_count=120
+cyclotomic_adjacent_compatible_pair_count=0
+compatible_ordered_shape_pair_count=721750
+shape_scale_class_triple_count=5035625
+full_scale_test_count=125890625
+orbit_zero_count=12400
+zero_checksum=4071796996668289174
+full_replay_failure_count=0
+rank_14_count=12400
+minimum_rank=14
+maximum_rank=14
+first_witness_codes=136,200869,265558
+first_witness_scale_exponents=13,11
+REASONING_END

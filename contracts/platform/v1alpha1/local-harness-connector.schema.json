@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/local-harness-connector.schema.json",
+  "title": "Reasoning Scoped Local-Harness Compute Connector",
+  "description": "A secret-free verifier record for an audience-bound, expiring, downscoped compute grant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "connector_grant_id",
+    "issued_at",
+    "expires_at",
+    "audience",
+    "grant_policy_digest",
+    "binding",
+    "capability_set",
+    "budget",
+    "approval",
+    "revocation",
+    "replay_protection",
+    "presentation"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.local-harness-connector"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "connector_grant_id": {"type": "string", "pattern": "^connector_grant_[A-Za-z0-9._-]{3,127}$"},
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "audience": {"type": "string", "format": "uri", "pattern": "^https://"},
+    "grant_policy_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "tenant_id", "project_id", "operation_id", "route_plan_id", "harness_id", "target_id", "max_jobs"],
+      "properties": {
+        "actor": {"$ref": "common.schema.json#/$defs/actor"},
+        "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+        "route_plan_id": {"type": "string", "pattern": "^route_plan_[A-Za-z0-9._-]{3,127}$"},
+        "harness_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "target_id": {"type": "string", "pattern": "^target_[A-Za-z0-9._-]{3,127}$"},
+        "max_jobs": {"const": 1}
+      }
+    },
+    "capability_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "actions",
+        "account_access",
+        "billing_access",
+        "inference_access",
+        "project_export_access"
+      ],
+      "properties": {
+        "scope": {"const": "reasoning.executor.compute-job-lifecycle"},
+        "actions": {
+          "const": ["submit", "read", "events", "artifacts", "cancel"]
+        },
+        "account_access": {"const": false},
+        "billing_access": {"const": false},
+        "inference_access": {"const": false},
+        "project_export_access": {"const": false}
+      }
+    },
+    "budget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "currency", "maximum_amount", "reservation_id"],
+          "properties": {
+            "kind": {"const": "monetary"},
+            "currency": {"const": "USD"},
+            "maximum_amount": {"$ref": "common.schema.json#/$defs/amount"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "quota_id", "maximum_vcpu_seconds", "maximum_memory_gib_seconds"],
+          "properties": {
+            "kind": {"const": "free_quota"},
+            "quota_id": {"$ref": "common.schema.json#/$defs/stableId"},
+            "maximum_vcpu_seconds": {"$ref": "common.schema.json#/$defs/quantity"},
+            "maximum_memory_gib_seconds": {"$ref": "common.schema.json#/$defs/quantity"}
+          }
+        }
+      ]
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_id", "actor", "approved_at", "scope", "approved_grant_policy_digest"],
+      "properties": {
+        "approval_id": {"type": "string", "pattern": "^approval_[A-Za-z0-9._-]{3,127}$"},
+        "actor": {"$ref": "common.schema.json#/$defs/actor"},
+        "approved_at": {"type": "string", "format": "date-time"},
+        "scope": {"const": "compute_connector"},
+        "approved_grant_policy_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "revocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revocation_id", "supported", "revoked_at"],
+      "properties": {
+        "revocation_id": {"type": "string", "pattern": "^revocation_[A-Za-z0-9._-]{3,127}$"},
+        "supported": {"const": true},
+        "revoked_at": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+      }
+    },
+    "replay_protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request_nonce_required", "idempotency_key_required", "nonce_ttl_seconds"],
+      "properties": {
+        "request_nonce_required": {"const": true},
+        "idempotency_key_required": {"const": true},
+        "nonce_ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 300}
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exchangeable", "refreshable", "reusable_account_material", "inference_material"],
+      "properties": {
+        "exchangeable": {"const": false},
+        "refreshable": {"const": false},
+        "reusable_account_material": {"const": false},
+        "inference_material": {"const": false}
+      }
+    }
+  }
+}

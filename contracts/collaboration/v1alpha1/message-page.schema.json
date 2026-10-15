@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/message-page.schema.json",
+  "title": "Reasoning Shared Topic Message Page",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "organization_id", "workspace_id", "topic_id",
+    "after_cursor", "messages", "next_cursor", "complete"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.collaboration.message-page"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "organization_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "workspace_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "topic_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "after_cursor": {
+      "oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/opaqueCursor"}]
+    },
+    "messages": {
+      "type": "array", "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message_id", "sequence", "actor", "kind", "content", "occurred_at"],
+        "properties": {
+          "message_id": {"$ref": "common.schema.json#/$defs/stableId"},
+          "sequence": {"type": "integer", "minimum": 1},
+          "actor": {"$ref": "common.schema.json#/$defs/actor"},
+          "kind": {"enum": ["human", "assistant", "workflow", "system"]},
+          "content": {"type": "string", "minLength": 1, "maxLength": 262144},
+          "operation_id": {
+            "oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/stableId"}]
+          },
+          "occurred_at": {"$ref": "common.schema.json#/$defs/timestamp"}
+        }
+      }
+    },
+    "next_cursor": {
+      "oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/opaqueCursor"}]
+    },
+    "complete": {"type": "boolean"}
+  }
+}

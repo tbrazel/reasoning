@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-product-policy/v1alpha1/common.schema.json",
+  "title": "Reasoning Cloud Product Policy Common Definitions",
+  "$defs": {
+    "schemaVersion": {"const": "1.0.0-alpha.1"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[a-z][A-Za-z0-9._:-]{2,127}$"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "service", "harness"]},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "canonicalReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "schema_version", "record_id", "digest"],
+      "properties": {
+        "schema_id": {"type": "string", "pattern": "^reasoning\\.[a-z-]+\\.[a-z-]+$"},
+        "schema_version": {"const": "1.0.0-alpha.1"},
+        "record_id": {"$ref": "#/$defs/stableId"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "versionedDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "policyTerms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "version",
+        "digest",
+        "scope",
+        "data_classes",
+        "processors",
+        "retention_seconds",
+        "effective_at",
+        "expires_at"
+      ],
+      "properties": {
+        "policy_id": {"$ref": "#/$defs/stableId"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "scope": {"const": "account"},
+        "data_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {"enum": ["usage_metadata", "performance_metrics", "error_metadata", "prompt_content", "response_content", "project_content", "artifact_content"]}
+        },
+        "processors": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "retention_seconds": {"type": "integer", "minimum": 0, "maximum": 31536000},
+        "effective_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "expires_at": {"type": ["string", "null"], "format": "date-time", "maxLength": 40}
+      }
+    },
+    "price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "currency", "lower_bound", "upper_bound", "basis"],
+      "properties": {
+        "state": {"enum": ["zero", "estimated", "unknown", "unavailable"]},
+        "currency": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"},
+        "lower_bound": {"type": ["string", "null"], "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$", "maxLength": 32},
+        "upper_bound": {"type": ["string", "null"], "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$", "maxLength": 32},
+        "basis": {"type": ["string", "null"], "minLength": 1, "maxLength": 255}
+      }
+    },
+    "limit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "scope", "maximum", "period_seconds", "unit"],
+      "properties": {
+        "kind": {"enum": ["operations", "concurrency", "spend"]},
+        "scope": {"enum": ["account", "tenant", "offer"]},
+        "maximum": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$", "maxLength": 32},
+        "period_seconds": {"type": ["integer", "null"], "minimum": 1, "maximum": 31536000},
+        "unit": {"enum": ["operations", "jobs", "USD"]}
+      }
+    },
+    "dataPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "location", "region", "subprocessors", "retention_seconds", "provider_training"],
+      "properties": {
+        "state": {"enum": ["verified", "planned", "unavailable"]},
+        "location": {"enum": ["device_local", "hosted"]},
+        "region": {"type": ["string", "null"], "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$", "maxLength": 32},
+        "subprocessors": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "retention_seconds": {"type": "integer", "minimum": 0, "maximum": 31536000},
+        "provider_training": {"enum": ["prohibited", "permitted"]}
+      }
+    },
+    "requiredTelemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "policy_id", "version", "digest", "purposes", "data_classes", "processors", "region", "retention_seconds", "field_allowlist"],
+      "properties": {
+        "state": {"enum": ["configured", "not_applicable", "unavailable"]},
+        "policy_id": {"type": ["string", "null"], "pattern": "^[a-z][A-Za-z0-9._:-]{2,127}$"},
+        "version": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "purposes": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["service_operation", "billing", "reliability", "abuse_prevention"]}
+        },
+        "data_classes": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {"enum": ["usage_metadata", "performance_metrics", "error_metadata"]}
+        },
+        "processors": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "region": {"type": ["string", "null"], "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$", "maxLength": 32},
+        "retention_seconds": {"type": ["integer", "null"], "minimum": 0, "maximum": 31536000},
+        "field_allowlist": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,127}$"}
+        }
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "availability", "price", "limits", "data_path", "required_telemetry"],
+      "properties": {
+        "reference": {"$ref": "#/$defs/canonicalReference"},
+        "availability": {"enum": ["available", "unavailable"]},
+        "price": {"$ref": "#/$defs/price"},
+        "limits": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/limit"}
+        },
+        "data_path": {"$ref": "#/$defs/dataPath"},
+        "required_telemetry": {"$ref": "#/$defs/requiredTelemetry"}
+      }
+    },
+    "optionalUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "policy", "decision", "decision_history", "prior_data_disposition", "allowed_action"],
+      "properties": {
+        "availability": {"enum": ["available", "unavailable"]},
+        "policy": {"$ref": "#/$defs/policyTerms"},
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "revision", "digest", "decided_at", "policy_digest"],
+          "properties": {
+            "state": {"enum": ["off", "granted", "withdrawn"]},
+            "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+            "digest": {"$ref": "#/$defs/digest"},
+            "decided_at": {"type": ["string", "null"], "format": "date-time", "maxLength": 40},
+            "policy_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"}
+          }
+        },
+        "decision_history": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["revision", "digest", "state", "action", "decided_at", "policy_digest", "policy"],
+            "properties": {
+              "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+              "digest": {"$ref": "#/$defs/digest"},
+              "state": {"enum": ["off", "granted", "withdrawn"]},
+              "action": {"enum": ["initialize", "grant", "withdraw"]},
+              "decided_at": {"type": "string", "format": "date-time", "maxLength": 40},
+              "policy_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+              "policy": {
+                "oneOf": [
+                  {"type": "null"},
+                  {"$ref": "#/$defs/policyTerms"}
+                ]
+              }
+            }
+          }
+        },
+        "prior_data_disposition": {"enum": ["not_applicable", "retained_until_expiry", "deleted"]},
+        "allowed_action": {"enum": ["grant", "withdraw", "none"]}
+      }
+    }
+  }
+}

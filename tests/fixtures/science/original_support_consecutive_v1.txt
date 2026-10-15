@@ -1,0 +1,17 @@
+REASONING_THREE_BLOCK_CONSECUTIVE_RATIONAL_V1
+support_residues=0,1,2
+normalized_shape_count=4420
+cyclotomic_shape_count=120
+additive_shape_scale_class_triple_count=135545985
+adjacent_scale_solution_count=40956925
+full_scale_test_count=40956925
+orbit_zero_count=4100
+cyclotomic_orbit_zero_count=0
+zero_checksum=8483181085099946785
+full_replay_failure_count=0
+rank_14_count=4100
+minimum_rank=14
+maximum_rank=14
+first_witness_codes=1826,136,146505
+first_witness_scale_exponents=17,19
+REASONING_END

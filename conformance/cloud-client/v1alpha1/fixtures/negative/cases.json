@@ -1,0 +1,142 @@
+{
+  "schema_id": "reasoning.cloud-client.negative-cases",
+  "schema_version": "1.0.0-alpha.1",
+  "cases": [
+    {
+      "id": "connected-session-requires-actor",
+      "schema": "session.schema.json",
+      "base": "positive/session.connected.json",
+      "validation": "schema",
+      "mutations": [{"op": "remove", "pointer": "/actor"}]
+    },
+    {
+      "id": "disconnected-session-exposes-no-identity",
+      "schema": "session.schema.json",
+      "base": "positive/session.disconnected.json",
+      "validation": "schema",
+      "mutations": [{"op": "add", "pointer": "/tenant_id", "value": "tenant_alpha"}]
+    },
+    {
+      "id": "session-rejects-credential-field",
+      "schema": "session.schema.json",
+      "base": "positive/session.connected.json",
+      "validation": "schema",
+      "mutations": [{"op": "add", "pointer": "/access_token", "value": "must-not-cross-boundary"}]
+    },
+    {
+      "id": "capabilities-reject-mixed-route-pricing-pair",
+      "schema": "capabilities.schema.json",
+      "base": "positive/capabilities.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/route_pricing_pairs/1/pricing", "value": "1.0.0-alpha.1"}]
+    },
+    {
+      "id": "capabilities-reject-descriptor-substitution",
+      "schema": "capabilities.schema.json",
+      "base": "positive/capabilities.json",
+      "validation": "capabilities_semantic",
+      "mutations": [{"op": "replace", "pointer": "/harnesses/0/digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]
+    },
+    {
+      "id": "capabilities-reject-compatibility-substitution",
+      "schema": "capabilities.schema.json",
+      "base": "positive/capabilities.json",
+      "validation": "capabilities_semantic",
+      "mutations": [{"op": "replace", "pointer": "/compatibility_digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]
+    },
+    {
+      "id": "run-rejects-mixed-route-pricing-version",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/pricing/schema_version", "value": "1.0.0-alpha.1"}]
+    },
+    {
+      "id": "terminal-run-requires-complete-pricing",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/pricing", "value": null},
+        {"op": "replace", "pointer": "/pricing_digest", "value": null}
+      ]
+    },
+    {
+      "id": "run-rejects-actor-substitution",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/actor/id", "value": "user_other"}]
+    },
+    {
+      "id": "run-rejects-project-substitution",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/project_binding/project_id", "value": "project_other"}]
+    },
+    {
+      "id": "run-rejects-capability-snapshot-substitution",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/capability_snapshot_digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]
+    },
+    {
+      "id": "run-rejects-route-digest-substitution",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/route_plan_digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]
+    },
+    {
+      "id": "run-rejects-pricing-digest-substitution",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/pricing_digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]
+    },
+    {
+      "id": "run-rejects-terminal-time-before-creation",
+      "schema": "run.schema.json",
+      "base": "positive/run.succeeded.json",
+      "validation": "run_semantic",
+      "mutations": [{"op": "replace", "pointer": "/terminal_at", "value": "2026-09-01T18:02:00Z"}]
+    },
+    {
+      "id": "event-page-rejects-operation-substitution",
+      "schema": "run-event-page.schema.json",
+      "base": "positive/run-event-page.complete.json",
+      "validation": "events_semantic",
+      "mutations": [{"op": "replace", "pointer": "/events/1/operation_id", "value": "operation_other"}]
+    },
+    {
+      "id": "event-page-rejects-nonmonotone-sequence",
+      "schema": "run-event-page.schema.json",
+      "base": "positive/run-event-page.complete.json",
+      "validation": "events_semantic",
+      "mutations": [{"op": "replace", "pointer": "/events/2/sequence", "value": 2}]
+    },
+    {
+      "id": "event-page-rejects-next-cursor-substitution",
+      "schema": "run-event-page.schema.json",
+      "base": "positive/run-event-page.complete.json",
+      "validation": "events_semantic",
+      "mutations": [{"op": "replace", "pointer": "/next_cursor", "value": "different-uninterpreted-cursor"}]
+    },
+    {
+      "id": "event-page-rejects-duplicate-cursor",
+      "schema": "run-event-page.schema.json",
+      "base": "positive/run-event-page.complete.json",
+      "validation": "events_semantic",
+      "mutations": [{"op": "replace", "pointer": "/events/2/cursor", "value": "cursor-second-uninterpreted-value"}]
+    },
+    {
+      "id": "artifact-event-rejects-credential-value",
+      "schema": "run-event-page.schema.json",
+      "base": "positive/run-event-page.complete.json",
+      "validation": "security_semantic",
+      "mutations": [{"op": "replace", "pointer": "/events/2/payload/artifact/name", "value": "Bearer abcdefghijklmnopqrstuvwxyz"}]
+    }
+  ]
+}

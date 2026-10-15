@@ -1,0 +1,18 @@
+.org-inference-ledger { margin-top: 1.8rem; }
+.org-inference-ledger > header, .org-call-detail > header { display: flex; align-items: center; gap: .75rem; }
+.org-inference-ledger > header > div { flex: 1; }
+.org-ledger-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
+.org-ledger-filters label { flex: 1 1 140px; }
+.org-ledger-table { overflow-x: auto; margin-top: 1rem; }
+.org-ledger-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.org-ledger-table th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; opacity: .65; }
+.org-ledger-table th, .org-ledger-table td { padding: .7rem .5rem; border-bottom: 1px solid var(--org-border, #ffffff20); vertical-align: top; }
+.org-ledger-table td small { display: block; font-size: .75rem; opacity: .7; margin-top: .3rem; }
+.org-ledger-table td button { text-align: left; padding: 0; border: 0; background: transparent; color: var(--org-accent, #81b7ff); }
+.org-ledger-pagination { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .7rem; }
+.org-call-detail { padding: 1rem; margin-top: 1rem; border: 1px solid var(--org-border, #ffffff20); border-radius: 14px; }
+.org-call-detail > header h4 { flex: 1; }
+.org-call-detail dl { display: grid; grid-template-columns: max-content 1fr; gap: .45rem 1rem; font-size: .85rem; }
+.org-call-detail dd { margin: 0; overflow-wrap: anywhere; }
+.org-call-detail pre { overflow: auto; max-height: 24rem; font-size: .75rem; }
+@media (max-width: 700px) { .org-inference-ledger > header { flex-wrap: wrap; } .org-inference-ledger > header > div { flex-basis: 100%; } }

@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reasoning-ledger"
+version = "0.1.0"
+description = "Self-hosted research organization chat, workflows, isolated computation, and local research ledger"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "LICENSES/*.txt"]
+authors = [{name = "Benjamin Antieau"}, {name = "Deven Manam"}]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "certifi>=2026.6,<2027",
+    "jsonschema>=4.23,<5",
+    "mcp>=1.2,<2",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "httpx>=0.27,<1",
+    "h11>=0.16,<1",
+    "PyJWT[crypto]>=2.10,<3",
+    "cryptography==50.0.1",
+    "rich>=15,<16",
+    "markdown-it-py>=4,<5",
+    "mdit-py-plugins>=0.5,<1",
+]
+
+[project.urls]
+Documentation = "https://github.com/tertius-ai/reasoning/tree/main/docs"
+Issues = "https://github.com/tertius-ai/reasoning/issues"
+Repository = "https://github.com/tertius-ai/reasoning"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-xdist==3.8.0", "ruff>=0.12"]
+dev = ["watchfiles>=1,<2"]
+postgres = ["psycopg[binary]>=3.2,<4"]
+modal = ["modal==1.6.0; python_version < '3.15'"]
+publication = ["boto3>=1.43,<2"]
+desktop = [
+    "pyinstaller>=6.15,<7",
+    "keyring>=25.7,<26",
+]
+
+[project.scripts]
+reasoning-ledger = "reasoning_ledger.cli:main"
+reasoning-ledger-web = "reasoning_ledger.webapp:main"
+reasoning-server = "reasoning_ledger.server.cli:main"
+reasoning-compute-worker = "reasoning_ledger.server.compute_worker:main"
+reasoning-work-worker = "reasoning_ledger.server.work_worker:main"
+reasoning-deploy = "reasoning_ledger.deployment.cli:main"
+reasoning-dev = "reasoning_ledger.development:main"
+reasoning-bot = "reasoning_ledger.server.bot_client:main"
+reasoning-bot-cloud = "reasoning_ledger.deployment.bot_cloud_cli:main"
+reasoning-bot-webhook = "reasoning_ledger.server.webhook_receiver:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+reasoning_ledger = [
+    "agents/*.cpp",
+    "schemas/*.json",
+    "prompts/*.md",
+    "assets/*.js",
+    "assets/*.json",
+    "assets/*LICENSE.txt",
+    "builtin_skills/**/*",
+]
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

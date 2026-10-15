@@ -1,0 +1,47 @@
+[
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_cancel_001",
+    "job_id": "job_fixture_cancel_001",
+    "sequence": 1,
+    "cursor": "opaque:cancel:001",
+    "type": "job.accepted",
+    "state": "queued",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:00Z",
+    "payload": {"persisted": true}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_cancel_002",
+    "job_id": "job_fixture_cancel_001",
+    "sequence": 2,
+    "cursor": "opaque:cancel:002",
+    "type": "job.cancellation_requested",
+    "state": "queued",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:01Z",
+    "payload": {
+      "request_id": "request_cancel_001",
+      "idempotency_key": "cancel-fixture-000000001",
+      "actor_type": "user",
+      "actor_id": "user_fixture",
+      "persisted": true
+    }
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_cancel_003",
+    "job_id": "job_fixture_cancel_001",
+    "sequence": 3,
+    "cursor": "opaque:cancel:003",
+    "type": "job.cancelled",
+    "state": "cancelled",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:02Z",
+    "payload": {"reason": "requested_by_actor"}
+  }
+]

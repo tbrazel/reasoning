@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reasoning Control"
+  short_description: "Operate autonomous Reasoning research runs"
+  default_prompt: "Use $reasoning-control to start and monitor a verified research campaign."

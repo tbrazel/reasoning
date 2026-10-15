@@ -1,0 +1,124 @@
+{
+  "format": 1,
+  "artifacts": [
+    {
+      "id": "rust-compiler-notices",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "rustc-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+      "url": "https://static.rust-lang.org/dist/rustc-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+      "sha256": "31a0d3ac9383dfdeb4fce86eeed5ade3230131c635264c0eab7252dbf235f28e"
+    },
+    {
+      "id": "rust-standard-library-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "rustc-1.94.0-src.tar.xz",
+      "url": "https://static.rust-lang.org/dist/rustc-1.94.0-src.tar.xz",
+      "sha256": "0b53ae34f5c0c3612cfe1de139f9167a018cd5737bc2205664fd69ba9b25f600"
+    },
+    {
+      "id": "sage-full-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "sage-10.6.tar.gz",
+      "url": "https://github.com/sagemath/sage/releases/download/10.6/sage-10.6.tar.gz",
+      "sha256": "5e207ad24a05dc2c5e9e1699110f4320b9e7caf7a0d7e364ff2b006ff9cb33cd"
+    },
+    {
+      "id": "julia-full-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "julia-1.10.11-full.tar.gz",
+      "url": "https://github.com/JuliaLang/julia/releases/download/v1.10.11/julia-1.10.11-full.tar.gz",
+      "sha256": "5c8b509e04b3b33c881b34afa9d5c157fc8b4060f17f9c7c4a7ad0fc3b7352d5"
+    },
+    {
+      "id": "lean-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "lean4-v4.24.0.tar.gz",
+      "url": "https://codeload.github.com/leanprover/lean4/tar.gz/refs/tags/v4.24.0",
+      "sha256": "6e1a5dd9b541e4686b49017d871500811f33021234d5c17fb347e685839844e2"
+    },
+    {
+      "id": "mathlib-source",
+      "profiles": ["lean-mathlib"],
+      "file": "mathlib-f897ebcf.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/mathlib4/tar.gz/f897ebcf72cd16f89ab4577d0c826cd14afaafc7",
+      "sha256": "58274ab9ab85211e49cfa88eb84f17dee5e2d62623893549eef076ef9472103d"
+    },
+    {
+      "id": "plausible-source",
+      "profiles": ["lean-mathlib"],
+      "file": "plausible-dfd06ebfe8d0e8fa7faba9cb5e5a2e74e7bd2805.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/plausible/tar.gz/dfd06ebfe8d0e8fa7faba9cb5e5a2e74e7bd2805",
+      "sha256": "54ab9e6fe721d4141ed46a903df14145bb7533f44483426fb9de4adc5d789e68"
+    },
+    {
+      "id": "LeanSearchClient-source",
+      "profiles": ["lean-mathlib"],
+      "file": "LeanSearchClient-99657ad92e23804e279f77ea6dbdeebaa1317b98.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/LeanSearchClient/tar.gz/99657ad92e23804e279f77ea6dbdeebaa1317b98",
+      "sha256": "5b97f91773b2945fd4c43f8ca0c6b32754c5816667f8ec178c71147db020d301"
+    },
+    {
+      "id": "importGraph-source",
+      "profiles": ["lean-mathlib"],
+      "file": "importGraph-d768126816be17600904726ca7976b185786e6b9.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/import-graph/tar.gz/d768126816be17600904726ca7976b185786e6b9",
+      "sha256": "b216ff5172958eb6497b28c441669828defa3c79dec9cd09b7768773dfc97e3c"
+    },
+    {
+      "id": "proofwidgets-source",
+      "profiles": ["lean-mathlib"],
+      "file": "proofwidgets-556caed0eadb7901e068131d1be208dd907d07a2.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/ProofWidgets4/tar.gz/556caed0eadb7901e068131d1be208dd907d07a2",
+      "sha256": "6fd87d355d3cfb0d0987e81fe3204d46e9be0447c29a9aa81205230116de4189"
+    },
+    {
+      "id": "aesop-source",
+      "profiles": ["lean-mathlib"],
+      "file": "aesop-725ac8cd67acd70a7beaf47c3725e23484c1ef50.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/aesop/tar.gz/725ac8cd67acd70a7beaf47c3725e23484c1ef50",
+      "sha256": "97bebc7ed44a940534247ff10aac5dfb18cd90c7ef56bf9c7a4568e6958e51eb"
+    },
+    {
+      "id": "Qq-source",
+      "profiles": ["lean-mathlib"],
+      "file": "Qq-dea6a3361fa36d5a13f87333dc506ada582e025c.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/quote4/tar.gz/dea6a3361fa36d5a13f87333dc506ada582e025c",
+      "sha256": "a089b7f4ec6faed6015fabdb3531b4a321d3b67c6b3535ed7144366109d52cae"
+    },
+    {
+      "id": "batteries-source",
+      "profiles": ["lean-mathlib"],
+      "file": "batteries-8da40b72fece29b7d3fe3d768bac4c8910ce9bee.tar.gz",
+      "url": "https://codeload.github.com/leanprover-community/batteries/tar.gz/8da40b72fece29b7d3fe3d768bac4c8910ce9bee",
+      "sha256": "6ac1b77ec2ad35e5f3f28486082ca3406a4048cd42c18a1ea5508ce102e09b4e"
+    },
+    {
+      "id": "Cli-source",
+      "profiles": ["lean-mathlib"],
+      "file": "Cli-91c18fa62838ad0ab7384c03c9684d99d306e1da.tar.gz",
+      "url": "https://codeload.github.com/leanprover/lean4-cli/tar.gz/91c18fa62838ad0ab7384c03c9684d99d306e1da",
+      "sha256": "465f91b6825022c9242fb3bf0b8f80394e6396109e442423534027610a6aaedd"
+    },
+    {
+      "id": "noether-gmp-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "gmp-6.3.0.tar.xz",
+      "url": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
+      "sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+    },
+    {
+      "id": "noether-mpfr-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "mpfr-4.2.2.tar.xz",
+      "url": "https://www.mpfr.org/mpfr-4.2.2/mpfr-4.2.2.tar.xz",
+      "sha256": "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"
+    },
+    {
+      "id": "noether-flint-source",
+      "profiles": ["research-cpu", "lean-mathlib"],
+      "file": "flint-3.6.0.tar.gz",
+      "url": "https://github.com/flintlib/flint/releases/download/v3.6.0/flint-3.6.0.tar.gz",
+      "sha256": "b95e2c7792f5eea4a1c8d2d42c4098434756832e57a094b295eb5dfdc9b4c36b"
+    }
+  ]
+}

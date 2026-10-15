@@ -1,0 +1,650 @@
+#!/bin/sh
+set -eu
+
+RELEASE_PRINCIPAL='reasoning-release'
+RELEASE_NAMESPACE='reasoning-desktop'
+RELEASE_PUBLIC_KEY='@@RELEASE_PUBLIC_KEY@@'
+DEFAULT_MANIFEST_URL='@@MANIFEST_URL@@'
+DEFAULT_SIGNATURE_URL='@@SIGNATURE_URL@@'
+MAX_MANIFEST_BYTES=1048576
+MAX_SIGNATURE_BYTES=65536
+MAX_ARTIFACT_BYTES=2147483648
+MAX_MACOS_EXPANDED_BYTES=4294967296
+MAX_MACOS_ARCHIVE_ENTRIES=100000
+MAX_MACOS_CENTRAL_DIRECTORY_BYTES=67108864
+MAX_MACOS_EOCD_BYTES=65557
+
+fail() {
+    printf '%s\n' "reasoning-install: $*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<'EOF'
+Usage: reasoning-install [options]
+
+Online (default):
+  --manifest-url URL     Signed release manifest URL
+  --signature-url URL    OpenSSH signature URL
+
+Offline:
+  --offline              Disable every network request
+  --manifest PATH        Local signed manifest
+  --signature PATH       Local OpenSSH signature
+  --artifact PATH        Local artifact matching the selected manifest record
+
+Common:
+  --prefix PATH          User installation prefix
+  --version VERSION      Require one exact manifest version
+  --print-plan           Verify inputs and print the selected plan without installing
+  -h, --help             Show this help
+EOF
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || fail "required command is unavailable: $1"
+}
+
+file_size() {
+    wc -c < "$1" | tr -d '[:space:]'
+}
+
+sha256_file() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        fail 'sha256sum or shasum is required'
+    fi
+}
+
+secure_parent() {
+    parent=$1
+    mkdir -p "$parent"
+    [ -d "$parent" ] || fail "installation parent is not a directory: $parent"
+    [ ! -L "$parent" ] || fail "installation parent must not be a symbolic link: $parent"
+}
+
+download_https() {
+    url=$1
+    output=$2
+    limit=$3
+    case "$url" in
+        https://*) ;;
+        *) fail "online release URLs must use HTTPS: $url" ;;
+    esac
+    authority=${url#https://}
+    authority=${authority%%/*}
+    [ -n "$authority" ] || fail "online release URL has no host: $url"
+    case "$authority" in
+        *'@'*) fail "online release URLs must not contain credentials: $url" ;;
+    esac
+    case "$url" in
+        *'*'*|*'?'*|*'['*|*']'*|*'{'*|*'}'*)
+            fail "online release URLs must not contain glob syntax: $url"
+            ;;
+    esac
+    "$CURL" --globoff --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+        --max-filesize "$limit" --output "$output" "$url"
+}
+
+verify_small_file() {
+    path=$1
+    limit=$2
+    label=$3
+    [ -f "$path" ] || fail "$label is not a regular file: $path"
+    size=$(file_size "$path")
+    case "$size" in
+        ''|*[!0-9]*) fail "could not measure $label" ;;
+    esac
+    [ "$size" -le "$limit" ] || fail "$label exceeds $limit bytes"
+}
+
+verify_signature() {
+    manifest=$1
+    signature=$2
+    allowed=$3
+    printf '%s namespaces="%s" %s\n' \
+        "$RELEASE_PRINCIPAL" "$RELEASE_NAMESPACE" "$RELEASE_PUBLIC_KEY" > "$allowed"
+    chmod 600 "$allowed"
+    ssh-keygen -Y verify -f "$allowed" -I "$RELEASE_PRINCIPAL" \
+        -n "$RELEASE_NAMESPACE" -s "$signature" < "$manifest" >/dev/null 2>&1 \
+        || fail 'release manifest signature verification failed'
+}
+
+select_record() {
+    manifest=$1
+    selected_os=$2
+    selected_arch=$3
+    awk -v want_os="$selected_os" -v want_arch="$selected_arch" -v max_bytes="$MAX_ARTIFACT_BYTES" '
+        BEGIN { header = 0; versions = 0; published = 0; selected = 0; invalid = 0 }
+        NR == 1 {
+            if ($0 != "reasoning-desktop-release-v1") invalid = 1
+            else header = 1
+            next
+        }
+        $0 == "" { invalid = 1; next }
+        $1 == "version" {
+            if (NF != 2 || versions != 0 || $2 !~ /^[0-9A-Za-z][0-9A-Za-z._-]{0,63}$/) invalid = 1
+            versions++
+            version = $2
+            next
+        }
+        $1 == "published_at" {
+            if (NF != 2 || published != 0 || $2 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/) invalid = 1
+            published++
+            next
+        }
+        $1 == "artifact" {
+            if (NF != 7) { invalid = 1; next }
+            key = $2 ":" $3
+            if (seen[key]++) invalid = 1
+            if ($2 != "darwin" && $2 != "linux") invalid = 1
+            if ($3 != "arm64" && $3 != "x64") invalid = 1
+            if (($2 == "darwin" && $4 != "macos-zip") || ($2 == "linux" && $4 != "linux-appimage")) invalid = 1
+            if ($5 !~ /^[0-9]+$/ || $5 + 0 <= 0 || $5 + 0 > max_bytes) invalid = 1
+            if ($6 !~ /^[0-9a-f]{64}$/) invalid = 1
+            if ($7 !~ /^https:\/\/[A-Za-z0-9._~:@!$&()+,;=%-]+(\/[A-Za-z0-9._~:@!$&()+,;=%\/-]*)?$/) invalid = 1
+            if ($2 == want_os && $3 == want_arch) {
+                selected++
+                kind = $4
+                bytes = $5
+                digest = $6
+                url = $7
+            }
+            next
+        }
+        { invalid = 1 }
+        END {
+            if (!header || versions != 1 || published != 1 || selected != 1 || invalid) exit 2
+            printf "%s\t%s\t%s\t%s\t%s\n", version, kind, bytes, digest, url
+        }
+    ' "$manifest" || fail 'release manifest is malformed, ambiguous, or lacks this platform'
+}
+
+verify_artifact() {
+    path=$1
+    expected_bytes=$2
+    expected_sha=$3
+    [ -f "$path" ] || fail "artifact is not a regular file: $path"
+    actual_bytes=$(file_size "$path")
+    [ "$actual_bytes" = "$expected_bytes" ] \
+        || fail "artifact size mismatch: expected $expected_bytes, observed $actual_bytes"
+    actual_sha=$(sha256_file "$path")
+    [ "$actual_sha" = "$expected_sha" ] \
+        || fail "artifact SHA-256 mismatch"
+}
+
+safe_zip_listing() {
+    archive=$1
+    names="$TEMPORARY/macos-archive.names"
+    central="$TEMPORARY/macos-archive.central-directory"
+    listing="$TEMPORARY/macos-archive.listing"
+    listing_body="$TEMPORARY/macos-archive.listing-body"
+    archive_bytes=$(file_size "$archive")
+    eocd=$(tail -c "$MAX_MACOS_EOCD_BYTES" "$archive" \
+        | LC_ALL=C od -An -v -tu1 \
+        | LC_ALL=C awk -v archive_bytes="$archive_bytes" '
+            function u16(position) {
+                return byte[position] + 256 * byte[position + 1]
+            }
+            function u32(position) {
+                return u16(position) + 65536 * u16(position + 2)
+            }
+            {
+                for (field = 1; field <= NF; field++) byte[++bytes] = $field
+            }
+            END {
+                for (position = bytes - 21; position >= 1; position--) {
+                    if (byte[position] != 80 || byte[position + 1] != 75 ||
+                        byte[position + 2] != 5 || byte[position + 3] != 6) continue
+                    comment_bytes = u16(position + 20)
+                    if (comment_bytes != bytes - (position + 21)) continue
+                    disk = u16(position + 4)
+                    central_disk = u16(position + 6)
+                    disk_entries = u16(position + 8)
+                    entries = u16(position + 10)
+                    central_bytes = u32(position + 12)
+                    central_offset = u32(position + 16)
+                    eocd_offset = archive_bytes - bytes + position - 1
+                    if (disk != 0 || central_disk != 0 || disk_entries != entries) exit 1
+                    if (entries == 65535 || central_bytes == 4294967295 || central_offset == 4294967295) exit 1
+                    if (central_offset + central_bytes != eocd_offset) exit 1
+                    printf "%d\t%d\t%d\n", entries, central_bytes, central_offset
+                    exit 0
+                }
+                exit 1
+            }
+        ') || fail 'macOS archive has no supported single-disk central directory'
+    old_ifs=$IFS
+    IFS='	'
+    set -f
+    set -- $eocd
+    set +f
+    IFS=$old_ifs
+    [ "$#" -eq 3 ] || fail 'macOS archive central directory could not be parsed safely'
+    central_entries=$1
+    central_bytes=$2
+    central_offset=$3
+    case "$central_entries:$central_bytes:$central_offset" in
+        *[!0-9:]*) fail 'macOS archive central directory contains invalid bounds' ;;
+    esac
+    [ "$central_entries" -gt 0 ] && [ "$central_entries" -le "$MAX_MACOS_ARCHIVE_ENTRIES" ] \
+        || fail 'macOS archive entry count is invalid or excessive'
+    [ "$central_bytes" -gt 0 ] && [ "$central_bytes" -le "$MAX_MACOS_CENTRAL_DIRECTORY_BYTES" ] \
+        || fail 'macOS archive central directory is invalid or excessive'
+    [ "$central_offset" -le "$archive_bytes" ] \
+        && [ "$central_bytes" -le "$((archive_bytes - central_offset))" ] \
+        || fail 'macOS archive central directory lies outside the artifact'
+    tail -c "+$((central_offset + 1))" "$archive" | head -c "$central_bytes" > "$central"
+    [ "$(file_size "$central")" = "$central_bytes" ] \
+        || fail 'macOS archive central directory is truncated'
+    LC_ALL=C od -An -v -tu1 "$central" \
+        | LC_ALL=C awk -v expected_entries="$central_entries" '
+            function u16(position) {
+                return byte[position] + 256 * byte[position + 1]
+            }
+            {
+                for (field = 1; field <= NF; field++) byte[++bytes] = $field
+            }
+            END {
+                position = 1
+                for (entry = 1; entry <= expected_entries; entry++) {
+                    if (position + 45 > bytes || byte[position] != 80 ||
+                        byte[position + 1] != 75 || byte[position + 2] != 1 ||
+                        byte[position + 3] != 2) exit 1
+                    name_bytes = u16(position + 28)
+                    extra_bytes = u16(position + 30)
+                    comment_bytes = u16(position + 32)
+                    next_position = position + 46 + name_bytes + extra_bytes + comment_bytes
+                    if (name_bytes == 0 || next_position - 1 > bytes) exit 1
+                    name = ""
+                    for (name_position = position + 46;
+                         name_position < position + 46 + name_bytes;
+                         name_position++) {
+                        value = byte[name_position]
+                        if (value < 32 || value > 126) exit 1
+                        name = name sprintf("%c", value)
+                    }
+                    extra_position = position + 46 + name_bytes
+                    extra_end = extra_position + extra_bytes
+                    while (extra_position < extra_end) {
+                        if (extra_position + 3 >= extra_end) exit 1
+                        extra_id = u16(extra_position)
+                        extra_size = u16(extra_position + 2)
+                        extra_position += 4
+                        if (extra_position + extra_size > extra_end) exit 1
+                        if (extra_id == 28789 || extra_id == 25461) exit 1
+                        extra_position += extra_size
+                    }
+                    print name
+                    position = next_position
+                }
+                if (position != bytes + 1) exit 1
+            }
+        ' > "$names" || fail 'macOS archive has unsafe raw names or malformed central-directory entries'
+    zipinfo -lT "$archive" > "$listing" \
+        || fail 'macOS archive metadata could not be read'
+    sed '1,2d;$d' "$listing" > "$listing_body"
+    LC_ALL=C awk -v max_bytes="$MAX_MACOS_EXPANDED_BYTES" -v max_entries="$MAX_MACOS_ARCHIVE_ENTRIES" '
+        NR == FNR {
+            names++
+            name[names] = $0
+            if ($0 == "" || $0 ~ /^\// || $0 ~ /\/\// || $0 ~ /\\/ || $0 ~ /[^ -~]/) invalid = 1
+            if ($0 ~ /(^|\/)\.($|\/)/ || $0 ~ /(^|\/)\.\.($|\/)/) invalid = 1
+            canonical = $0
+            sub(/\/$/, "", canonical)
+            if (canonical == "" || seen[tolower(canonical)]++) invalid = 1
+            if ($0 == "Reasoning.app" || index($0, "Reasoning.app/") == 1) found = 1
+            else invalid = 1
+            next
+        }
+        {
+            entries++
+            entry_type = substr($1, 1, 1)
+            if (entry_type != "-" && entry_type != "d") invalid = 1
+            if ($4 !~ /^[0-9]+$/) invalid = 1
+            total += $4
+        }
+        END {
+            if (!found || invalid || names == 0 || entries != names || entries > max_entries || total > max_bytes) exit 1
+        }
+    ' "$names" "$listing_body" \
+        || fail 'macOS archive has unsafe or non-canonical paths, entry types, duplicates, or expanded size'
+}
+
+atomic_link() {
+    target=$1
+    link=$2
+    link_parent=$(dirname "$link")
+    secure_parent "$link_parent"
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        fail "stable launch path exists and is not a symbolic link: $link"
+    fi
+    link_lock="$link_parent/.reasoning-current.lock"
+    mkdir "$link_lock" \
+        || fail "another installer or stale lock owns the stable launch path: $link_lock"
+    ACTIVE_LOCK=$link_lock
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        fail "stable launch path changed to a non-symbolic link: $link"
+    fi
+    temporary_link="$link_parent/.reasoning-current.$$"
+    [ ! -e "$temporary_link" ] && [ ! -L "$temporary_link" ] \
+        || fail "temporary stable launch path already exists: $temporary_link"
+    ln -s "$target" "$temporary_link"
+    ACTIVE_LINK=$temporary_link
+    case "$OS" in
+        darwin) mv -f -h "$temporary_link" "$link" ;;
+        linux) mv -f -T "$temporary_link" "$link" ;;
+        *) fail "unsupported platform during stable-path activation: $OS" ;;
+    esac
+    ACTIVE_LINK=
+    [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ] \
+        || fail "stable launch path activation did not commit cleanly: $link"
+    rmdir "$link_lock"
+    ACTIVE_LOCK=
+}
+
+acquire_release_lock() {
+    releases=$1
+    version=$2
+    release_lock="$releases/.reasoning-release-$version.lock"
+    mkdir "$release_lock" \
+        || fail "another installer or stale lock owns release $version: $release_lock"
+    ACTIVE_LOCK=$release_lock
+}
+
+release_lock_done() {
+    [ -n "$ACTIVE_LOCK" ] || return
+    rmdir "$ACTIVE_LOCK"
+    ACTIVE_LOCK=
+}
+
+install_macos() {
+    artifact=$1
+    version=$2
+    if [ -n "$PREFIX" ]; then
+        releases="$PREFIX/Reasoning Releases"
+        current="$PREFIX/Reasoning.app"
+    else
+        releases="$HOME/Applications/Reasoning Releases"
+        current="$HOME/Applications/Reasoning.app"
+    fi
+    secure_parent "$releases"
+    release_dir="$releases/$version"
+    destination="$release_dir/Reasoning.app"
+    marker="$release_dir/.reasoning-artifact-sha256"
+    acquire_release_lock "$releases" "$version"
+    if [ -e "$release_dir" ] || [ -L "$release_dir" ]; then
+        [ -d "$release_dir" ] && [ ! -L "$release_dir" ] \
+            || fail "macOS release path is not a regular directory: $release_dir"
+    fi
+    if [ ! -d "$destination" ]; then
+        [ ! -e "$release_dir" ] \
+            || fail "incomplete macOS release directory already exists: $release_dir"
+        stage=$(mktemp -d "$releases/.reasoning-stage.XXXXXX")
+        ACTIVE_STAGE=$stage
+        safe_zip_listing "$artifact"
+        unzip -q -o "$artifact" -d "$stage"
+        app="$stage/Reasoning.app"
+        [ -d "$app" ] && [ ! -L "$app" ] \
+            || fail 'macOS archive did not produce a regular Reasoning.app directory'
+        require_command codesign
+        require_command spctl
+        require_command plutil
+        require_command lipo
+        executable_name=$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist" 2>/dev/null) \
+            || fail 'macOS application has no readable CFBundleExecutable'
+        case "$executable_name" in
+            ''|*/*|*\\*|.|..) fail 'macOS application has an unsafe CFBundleExecutable' ;;
+        esac
+        executable="$app/Contents/MacOS/$executable_name"
+        [ -f "$executable" ] && [ ! -L "$executable" ] \
+            || fail 'macOS application executable is missing or is a symbolic link'
+        case "$ARCH" in
+            arm64) required_macos_arch=arm64 ;;
+            x64) required_macos_arch=x86_64 ;;
+            *) fail "unsupported macOS architecture: $ARCH" ;;
+        esac
+        lipo -archs "$executable" 2>/dev/null | awk -v wanted="$required_macos_arch" '
+            { for (field_index = 1; field_index <= NF; field_index++) if ($field_index == wanted) found = 1 }
+            END { exit found ? 0 : 1 }
+        ' || fail "macOS application does not contain the selected $ARCH architecture"
+        codesign --verify --deep --strict --verbose=2 "$app" >/dev/null 2>&1 \
+            || fail 'macOS application code-signature verification failed'
+        spctl --assess --type execute --verbose=2 "$app" >/dev/null 2>&1 \
+            || fail 'macOS Gatekeeper assessment failed'
+        printf '%s\n' "$EXPECTED_SHA" > "$stage/.reasoning-artifact-sha256"
+        stage_name=${stage##*/}
+        mv "$stage" "$release_dir"
+        if [ -e "$release_dir/$stage_name" ]; then
+            ACTIVE_STAGE="$release_dir/$stage_name"
+            fail "release directory collision detected for macOS version $version"
+        fi
+        ACTIVE_STAGE=
+    else
+        [ ! -L "$destination" ] \
+            || fail "installed macOS application must not be a symbolic link: $destination"
+        [ -f "$marker" ] && [ "$(sed -n '1p' "$marker")" = "$EXPECTED_SHA" ] \
+            || fail "installed macOS version $version does not match the signed artifact"
+        codesign --verify --deep --strict --verbose=2 "$destination" >/dev/null 2>&1 \
+            || fail 'installed macOS application code-signature verification failed'
+    fi
+    release_lock_done
+    atomic_link "$destination" "$current"
+    printf '%s\n' "Installed Reasoning $version at $current"
+}
+
+install_linux() {
+    artifact=$1
+    version=$2
+    if [ -n "$PREFIX" ]; then
+        releases="$PREFIX/lib/reasoning"
+        bin_dir="$PREFIX/bin"
+    else
+        releases="$HOME/.local/lib/reasoning"
+        bin_dir="$HOME/.local/bin"
+    fi
+    secure_parent "$releases"
+    secure_parent "$bin_dir"
+    release_dir="$releases/$version"
+    destination="$release_dir/reasoning.AppImage"
+    marker="$release_dir/.reasoning-artifact-sha256"
+    acquire_release_lock "$releases" "$version"
+    if [ -e "$release_dir" ] || [ -L "$release_dir" ]; then
+        [ -d "$release_dir" ] && [ ! -L "$release_dir" ] \
+            || fail "Linux release path is not a regular directory: $release_dir"
+    fi
+    if [ ! -f "$destination" ]; then
+        [ ! -e "$release_dir" ] \
+            || fail "incomplete Linux release directory already exists: $release_dir"
+        stage=$(mktemp -d "$releases/.reasoning-stage.XXXXXX")
+        ACTIVE_STAGE=$stage
+        magic=$(LC_ALL=C od -An -tx1 -N4 "$artifact" | tr -d '[:space:]')
+        [ "$magic" = '7f454c46' ] || fail 'Linux AppImage is not an ELF executable'
+        elf_class=$(LC_ALL=C od -An -tu1 -j4 -N1 "$artifact" | tr -d '[:space:]')
+        elf_data=$(LC_ALL=C od -An -tu1 -j5 -N1 "$artifact" | tr -d '[:space:]')
+        appimage_magic=$(LC_ALL=C od -An -tx1 -j8 -N3 "$artifact" | tr -d '[:space:]')
+        machine=$(LC_ALL=C od -An -tx1 -j18 -N2 "$artifact" | tr -d '[:space:]')
+        [ "$elf_class" = '2' ] && [ "$elf_data" = '1' ] \
+            || fail 'Linux AppImage must be a 64-bit little-endian ELF executable'
+        [ "$appimage_magic" = '414902' ] \
+            || fail 'Linux artifact is missing the AppImage type-2 marker'
+        case "$ARCH:$machine" in
+            x64:3e00|arm64:b700) ;;
+            *) fail "Linux AppImage architecture does not match selected $ARCH target" ;;
+        esac
+        cp "$artifact" "$stage/reasoning.AppImage"
+        chmod 755 "$stage/reasoning.AppImage"
+        printf '%s\n' "$EXPECTED_SHA" > "$stage/.reasoning-artifact-sha256"
+        stage_name=${stage##*/}
+        mv "$stage" "$release_dir"
+        if [ -e "$release_dir/$stage_name" ]; then
+            ACTIVE_STAGE="$release_dir/$stage_name"
+            fail "release directory collision detected for Linux version $version"
+        fi
+        ACTIVE_STAGE=
+    else
+        [ ! -L "$destination" ] \
+            || fail "installed Linux AppImage must not be a symbolic link: $destination"
+        [ -f "$marker" ] && [ "$(sed -n '1p' "$marker")" = "$EXPECTED_SHA" ] \
+            || fail "installed Linux version $version does not match the signed artifact"
+        [ "$(sha256_file "$destination")" = "$EXPECTED_SHA" ] \
+            || fail "installed Linux version $version failed integrity verification"
+    fi
+    release_lock_done
+    atomic_link "$destination" "$bin_dir/reasoning"
+    printf '%s\n' "Installed Reasoning $version at $bin_dir/reasoning"
+}
+
+MANIFEST_URL=$DEFAULT_MANIFEST_URL
+SIGNATURE_URL=$DEFAULT_SIGNATURE_URL
+MANIFEST_PATH=
+SIGNATURE_PATH=
+ARTIFACT_PATH=
+PREFIX=
+REQUIRED_VERSION=
+OFFLINE=0
+PRINT_PLAN=0
+CURL=${REASONING_CURL:-curl}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --manifest-url) [ "$#" -ge 2 ] || fail '--manifest-url requires a value'; MANIFEST_URL=$2; shift 2 ;;
+        --signature-url) [ "$#" -ge 2 ] || fail '--signature-url requires a value'; SIGNATURE_URL=$2; shift 2 ;;
+        --manifest) [ "$#" -ge 2 ] || fail '--manifest requires a value'; MANIFEST_PATH=$2; shift 2 ;;
+        --signature) [ "$#" -ge 2 ] || fail '--signature requires a value'; SIGNATURE_PATH=$2; shift 2 ;;
+        --artifact) [ "$#" -ge 2 ] || fail '--artifact requires a value'; ARTIFACT_PATH=$2; shift 2 ;;
+        --prefix) [ "$#" -ge 2 ] || fail '--prefix requires a value'; PREFIX=$2; shift 2 ;;
+        --version) [ "$#" -ge 2 ] || fail '--version requires a value'; REQUIRED_VERSION=$2; shift 2 ;;
+        --offline) OFFLINE=1; shift ;;
+        --print-plan) PRINT_PLAN=1; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) fail "unknown option: $1" ;;
+    esac
+done
+
+require_command awk
+require_command ssh-keygen
+require_command mktemp
+require_command wc
+require_command sed
+require_command readlink
+require_command od
+require_command head
+require_command tail
+
+if [ -n "$PREFIX" ]; then
+    case "$PREFIX" in
+        /) fail 'prefix must not be the filesystem root' ;;
+        /*) ;;
+        *) fail 'prefix must be an absolute path' ;;
+    esac
+    case "$PREFIX" in
+        *'..'*) fail 'prefix must not contain ..' ;;
+    esac
+fi
+
+TEMPORARY=$(mktemp -d "${TMPDIR:-/tmp}/reasoning-install.XXXXXX")
+ACTIVE_STAGE=
+ACTIVE_LINK=
+ACTIVE_LOCK=
+cleanup() {
+    if [ -n "$ACTIVE_STAGE" ]; then
+        rm -rf "$ACTIVE_STAGE"
+    fi
+    if [ -n "$ACTIVE_LINK" ]; then
+        rm -f "$ACTIVE_LINK"
+    fi
+    if [ -n "$ACTIVE_LOCK" ]; then
+        rmdir "$ACTIVE_LOCK" 2>/dev/null || true
+    fi
+    rm -rf "$TEMPORARY"
+}
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+if [ "$OFFLINE" -eq 1 ]; then
+    [ -n "$MANIFEST_PATH" ] && [ -n "$SIGNATURE_PATH" ] && [ -n "$ARTIFACT_PATH" ] \
+        || fail 'offline mode requires --manifest, --signature, and --artifact'
+    case "$MANIFEST_PATH" in -*) fail 'offline paths must not begin with -' ;; esac
+    case "$SIGNATURE_PATH" in -*) fail 'offline paths must not begin with -' ;; esac
+    case "$ARTIFACT_PATH" in -*) fail 'offline paths must not begin with -' ;; esac
+    verify_small_file "$MANIFEST_PATH" "$MAX_MANIFEST_BYTES" 'release manifest'
+    verify_small_file "$SIGNATURE_PATH" "$MAX_SIGNATURE_BYTES" 'release signature'
+    verify_small_file "$ARTIFACT_PATH" "$MAX_ARTIFACT_BYTES" 'release artifact'
+    cp "$MANIFEST_PATH" "$TEMPORARY/release.manifest"
+    cp "$SIGNATURE_PATH" "$TEMPORARY/release.manifest.sig"
+    cp "$ARTIFACT_PATH" "$TEMPORARY/artifact"
+    MANIFEST_PATH="$TEMPORARY/release.manifest"
+    SIGNATURE_PATH="$TEMPORARY/release.manifest.sig"
+    ARTIFACT_PATH="$TEMPORARY/artifact"
+else
+    [ -z "$MANIFEST_PATH$SIGNATURE_PATH$ARTIFACT_PATH" ] \
+        || fail 'local manifest, signature, and artifact require --offline'
+    require_command "$CURL"
+    MANIFEST_PATH="$TEMPORARY/release.manifest"
+    SIGNATURE_PATH="$TEMPORARY/release.manifest.sig"
+    download_https "$MANIFEST_URL" "$MANIFEST_PATH" "$MAX_MANIFEST_BYTES"
+    download_https "$SIGNATURE_URL" "$SIGNATURE_PATH" "$MAX_SIGNATURE_BYTES"
+fi
+
+verify_small_file "$MANIFEST_PATH" "$MAX_MANIFEST_BYTES" 'release manifest'
+verify_small_file "$SIGNATURE_PATH" "$MAX_SIGNATURE_BYTES" 'release signature'
+verify_signature "$MANIFEST_PATH" "$SIGNATURE_PATH" "$TEMPORARY/allowed_signers"
+
+case "$(uname -s)" in
+    Darwin) OS=darwin ;;
+    Linux) OS=linux ;;
+    *) fail 'Reasoning desktop supports macOS and Linux only' ;;
+esac
+case "$(uname -m)" in
+    arm64|aarch64) ARCH=arm64 ;;
+    x86_64|amd64) ARCH=x64 ;;
+    *) fail 'Reasoning desktop supports arm64 and x64 only' ;;
+esac
+
+record=$(select_record "$MANIFEST_PATH" "$OS" "$ARCH")
+old_ifs=$IFS
+IFS='	'
+set -f
+set -- $record
+set +f
+IFS=$old_ifs
+[ "$#" -eq 5 ] || fail 'selected release manifest record could not be parsed safely'
+VERSION=$1
+KIND=$2
+EXPECTED_BYTES=$3
+EXPECTED_SHA=$4
+ARTIFACT_URL=$5
+
+if [ -n "$REQUIRED_VERSION" ] && [ "$VERSION" != "$REQUIRED_VERSION" ]; then
+    fail "manifest version $VERSION does not match requested $REQUIRED_VERSION"
+fi
+
+if [ "$OFFLINE" -eq 0 ]; then
+    ARTIFACT_PATH="$TEMPORARY/artifact"
+    download_https "$ARTIFACT_URL" "$ARTIFACT_PATH" "$EXPECTED_BYTES"
+fi
+verify_artifact "$ARTIFACT_PATH" "$EXPECTED_BYTES" "$EXPECTED_SHA"
+
+if [ "$PRINT_PLAN" -eq 1 ]; then
+    printf 'version=%s\nos=%s\narch=%s\nkind=%s\nbytes=%s\nsha256=%s\n' \
+        "$VERSION" "$OS" "$ARCH" "$KIND" "$EXPECTED_BYTES" "$EXPECTED_SHA"
+    exit 0
+fi
+
+case "$OS:$KIND" in
+    darwin:macos-zip)
+        require_command unzip
+        require_command zipinfo
+        install_macos "$ARTIFACT_PATH" "$VERSION"
+        ;;
+    linux:linux-appimage)
+        install_linux "$ARTIFACT_PATH" "$VERSION"
+        ;;
+    *) fail "manifest package kind does not match platform: $OS/$KIND" ;;
+esac

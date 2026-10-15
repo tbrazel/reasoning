@@ -1,0 +1,411 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha2/pricing.schema.json",
+  "title": "Reasoning Unified Pricing Lifecycle",
+  "description": "One immutable quote, reservation, dispatch, usage, and settlement envelope for inference, computation, or a hybrid operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "pricing_lifecycle_id",
+    "operation",
+    "quote",
+    "reservation",
+    "dispatches",
+    "usage",
+    "settlement"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.pricing"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "pricing_lifecycle_id": {"type": "string", "pattern": "^pricing_[A-Za-z0-9._-]{3,127}$"},
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "kind", "actor", "tenant_id", "project_id", "idempotency_key", "request_digest", "route_plan_id"],
+      "properties": {
+        "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+        "kind": {"enum": ["inference", "compute", "hybrid"]},
+        "actor": {"$ref": "common.schema.json#/$defs/actor"},
+        "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "idempotency_key": {"type": "string", "minLength": 16, "maxLength": 255},
+        "request_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "route_plan_id": {"type": "string", "pattern": "^route_plan_[A-Za-z0-9._-]{3,127}$"}
+      }
+    },
+    "quote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quote_id", "sequence", "issued_at", "expires_at", "currency", "dimensions", "maximum_amount", "assumptions", "catalog_digest"],
+      "properties": {
+        "quote_id": {"type": "string", "pattern": "^quote_[A-Za-z0-9._-]{3,127}$"},
+        "sequence": {"const": 1},
+        "issued_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "currency": {"const": "USD"},
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/quotedDimension"}
+        },
+        "maximum_amount": {"$ref": "common.schema.json#/$defs/amount"},
+        "assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 512}
+        },
+        "catalog_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "reservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reservation_id", "sequence", "quote_id", "state", "reserved_at", "currency", "reserved_amount", "funding", "persisted_with_operation"],
+      "properties": {
+        "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+        "sequence": {"const": 2},
+        "quote_id": {"type": "string", "pattern": "^quote_[A-Za-z0-9._-]{3,127}$"},
+        "state": {"const": "reserved"},
+        "reserved_at": {"type": "string", "format": "date-time"},
+        "currency": {"const": "USD"},
+        "reserved_amount": {"$ref": "common.schema.json#/$defs/amount"},
+        "funding": {"enum": ["paid_balance", "free_quota", "organization_entitlement"]},
+        "persisted_with_operation": {"const": true}
+      }
+    },
+    "dispatches": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/dispatch"}
+    },
+    "usage": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/usageRecord"}
+    },
+    "settlement": {"$ref": "#/$defs/settlement"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "settlement": {
+            "properties": {"release_phase": {"const": "pre_dispatch"}},
+            "required": ["release_phase"]
+          }
+        },
+        "required": ["settlement"]
+      },
+      "then": {
+        "properties": {
+          "dispatches": {"maxItems": 0},
+          "usage": {"maxItems": 0}
+        }
+      },
+      "else": {
+        "properties": {
+          "dispatches": {"minItems": 1},
+          "usage": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"properties": {"kind": {"const": "hybrid"}}, "required": ["kind"]}}},
+      "then": {
+        "properties": {
+          "quote": {
+            "properties": {
+              "dimensions": {
+                "contains": {"properties": {"kind": {"const": "inference"}}, "required": ["kind"]},
+                "minContains": 1
+              }
+            },
+            "allOf": [
+              {"properties": {"dimensions": {"contains": {"properties": {"kind": {"const": "compute"}}, "required": ["kind"]}, "minContains": 1}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"operation": {"properties": {"kind": {"const": "hybrid"}}, "required": ["kind"]}}},
+          {
+            "not": {
+              "properties": {
+                "settlement": {
+                  "properties": {"release_phase": {"const": "pre_dispatch"}},
+                  "required": ["release_phase"]
+                }
+              },
+              "required": ["settlement"]
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "dispatches": {
+            "contains": {"properties": {"kind": {"const": "inference"}}, "required": ["kind"]},
+            "minContains": 1
+          },
+          "usage": {
+            "contains": {"properties": {"kind": {"const": "inference"}}, "required": ["kind"]},
+            "minContains": 1
+          }
+        },
+        "allOf": [
+          {"properties": {"dispatches": {"contains": {"properties": {"kind": {"const": "compute"}}, "required": ["kind"]}, "minContains": 1}}},
+          {"properties": {"usage": {"contains": {"properties": {"kind": {"const": "compute"}}, "required": ["kind"]}, "minContains": 1}}}
+        ]
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"properties": {"kind": {"const": "inference"}}, "required": ["kind"]}}},
+      "then": {
+        "properties": {
+          "quote": {"properties": {"dimensions": {"items": {"allOf": [{"$ref": "#/$defs/quotedDimension"}, {"properties": {"kind": {"const": "inference"}}}]}}}},
+          "dispatches": {"items": {"allOf": [{"$ref": "#/$defs/dispatch"}, {"properties": {"kind": {"const": "inference"}}}]}},
+          "usage": {"items": {"allOf": [{"$ref": "#/$defs/usageRecord"}, {"properties": {"kind": {"const": "inference"}}}]}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"properties": {"kind": {"const": "compute"}}, "required": ["kind"]}}},
+      "then": {
+        "properties": {
+          "quote": {"properties": {"dimensions": {"items": {"allOf": [{"$ref": "#/$defs/quotedDimension"}, {"properties": {"kind": {"const": "compute"}}}]}}}},
+          "dispatches": {"items": {"allOf": [{"$ref": "#/$defs/dispatch"}, {"properties": {"kind": {"const": "compute"}}}]}},
+          "usage": {"items": {"allOf": [{"$ref": "#/$defs/usageRecord"}, {"properties": {"kind": {"const": "compute"}}}]}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "quotedDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_id", "kind", "meter", "maximum_quantity", "unit_price", "maximum_amount", "basis"],
+      "properties": {
+        "component_id": {"type": "string", "pattern": "^price_component_[A-Za-z0-9._-]{3,127}$"},
+        "kind": {"enum": ["inference", "compute"]},
+        "meter": {"enum": ["input_tokens", "output_tokens", "requests", "vcpu_seconds", "memory_gib_seconds", "artifact_gib_seconds"]},
+        "maximum_quantity": {"$ref": "common.schema.json#/$defs/quantity"},
+        "unit_price": {"$ref": "common.schema.json#/$defs/amount"},
+        "maximum_amount": {"$ref": "common.schema.json#/$defs/amount"},
+        "basis": {"enum": ["catalog", "operator_rate", "free_quota"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "inference"}}, "required": ["kind"]},
+          "then": {"properties": {"meter": {"enum": ["input_tokens", "output_tokens", "requests"]}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "compute"}}, "required": ["kind"]},
+          "then": {"properties": {"meter": {"enum": ["vcpu_seconds", "memory_gib_seconds", "artifact_gib_seconds"]}}}
+        }
+      ]
+    },
+    "dispatch": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dispatch_id", "sequence", "kind", "reservation_id", "dispatched_at", "request_id"],
+          "properties": {
+            "dispatch_id": {"type": "string", "pattern": "^dispatch_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 3},
+            "kind": {"const": "inference"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "dispatched_at": {"type": "string", "format": "date-time"},
+            "request_id": {"type": "string", "pattern": "^inference_[A-Za-z0-9._-]{3,127}$"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dispatch_id", "sequence", "kind", "reservation_id", "dispatched_at", "job_id", "executor_contract_version"],
+          "properties": {
+            "dispatch_id": {"type": "string", "pattern": "^dispatch_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 3},
+            "kind": {"const": "compute"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "dispatched_at": {"type": "string", "format": "date-time"},
+            "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9._-]{3,127}$"},
+            "executor_contract_version": {"const": "1.0.0-alpha.1"}
+          }
+        }
+      ]
+    },
+    "usageRecord": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["usage_id", "sequence", "kind", "source", "dimensions", "amount", "currency", "provenance"],
+          "properties": {
+            "usage_id": {"type": "string", "pattern": "^usage_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 4},
+            "kind": {"const": "inference"},
+            "source": {"enum": ["provider_reported", "reasoning_calculated", "unknown"]},
+            "dimensions": {"$ref": "#/$defs/actualDimensions"},
+            "amount": {"oneOf": [{"$ref": "common.schema.json#/$defs/amount"}, {"type": "null"}]},
+            "currency": {"const": "USD"},
+            "provenance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["route_id", "provider", "model", "request_id"],
+              "properties": {
+                "route_id": {"type": "string", "pattern": "^route_[A-Za-z0-9._-]{3,127}$"},
+                "provider": {"$ref": "common.schema.json#/$defs/stableId"},
+                "model": {"type": "string", "minLength": 1, "maxLength": 255},
+                "request_id": {"type": "string", "pattern": "^inference_[A-Za-z0-9._-]{3,127}$"}
+              }
+            }
+          },
+          "allOf": [{"$ref": "#/$defs/usageAccounting"}]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["usage_id", "sequence", "kind", "source", "dimensions", "amount", "currency", "provenance"],
+          "properties": {
+            "usage_id": {"type": "string", "pattern": "^usage_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 4},
+            "kind": {"const": "compute"},
+            "source": {"enum": ["provider_reported", "reasoning_calculated", "unknown"]},
+            "dimensions": {"$ref": "#/$defs/actualDimensions"},
+            "amount": {"oneOf": [{"$ref": "common.schema.json#/$defs/amount"}, {"type": "null"}]},
+            "currency": {"const": "USD"},
+            "provenance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["target_id", "job_id", "image_digest", "capabilities_digest", "attestation_digest", "executor_provenance_id"],
+              "properties": {
+                "target_id": {"type": "string", "pattern": "^target_[A-Za-z0-9._-]{3,127}$"},
+                "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9._-]{3,127}$"},
+                "image_digest": {"$ref": "common.schema.json#/$defs/digest"},
+                "capabilities_digest": {"$ref": "common.schema.json#/$defs/digest"},
+                "attestation_digest": {"$ref": "common.schema.json#/$defs/digest"},
+                "executor_provenance_id": {"type": "string", "pattern": "^provenance_[A-Za-z0-9._-]{3,127}$"}
+              }
+            }
+          },
+          "allOf": [{"$ref": "#/$defs/usageAccounting"}]
+        }
+      ]
+    },
+    "usageAccounting": {
+      "if": {"properties": {"source": {"const": "unknown"}}, "required": ["source"]},
+      "then": {
+        "properties": {
+          "amount": {"type": "null"},
+          "dimensions": {"maxItems": 0}
+        }
+      },
+      "else": {
+        "properties": {
+          "amount": {"$ref": "common.schema.json#/$defs/amount"},
+          "dimensions": {"minItems": 1}
+        }
+      }
+    },
+    "actualDimensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["meter", "quantity"],
+        "properties": {
+          "meter": {"enum": ["input_tokens", "output_tokens", "requests", "vcpu_seconds", "memory_gib_seconds", "artifact_gib_seconds"]},
+          "quantity": {"$ref": "common.schema.json#/$defs/quantity"}
+        }
+      }
+    },
+    "settlement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["settlement_id", "sequence", "state", "release_phase", "release_reason", "reservation_id", "released_at", "currency", "actual_amount", "released_amount", "reservation_state", "atomic"],
+          "properties": {
+            "settlement_id": {"type": "string", "pattern": "^settlement_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"const": 3},
+            "state": {"const": "released"},
+            "release_phase": {"const": "pre_dispatch"},
+            "release_reason": {"enum": ["quote_expired", "cancelled_before_dispatch"]},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "released_at": {"type": "string", "format": "date-time"},
+            "currency": {"const": "USD"},
+            "actual_amount": {"const": "0"},
+            "released_amount": {"$ref": "common.schema.json#/$defs/amount"},
+            "reservation_state": {"const": "released"},
+            "atomic": {"const": true}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["settlement_id", "sequence", "state", "reservation_id", "settled_at", "currency", "actual_amount", "released_amount", "usage_digest", "actual_provenance_complete", "atomic"],
+          "properties": {
+            "settlement_id": {"type": "string", "pattern": "^settlement_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 5},
+            "state": {"const": "settled"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "settled_at": {"type": "string", "format": "date-time"},
+            "currency": {"const": "USD"},
+            "actual_amount": {"$ref": "common.schema.json#/$defs/amount"},
+            "released_amount": {"$ref": "common.schema.json#/$defs/amount"},
+            "usage_digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "actual_provenance_complete": {"const": true},
+            "atomic": {"const": true}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["settlement_id", "sequence", "state", "release_phase", "reservation_id", "settled_at", "currency", "actual_amount", "released_amount", "usage_digest", "actual_provenance_complete", "atomic"],
+          "properties": {
+            "settlement_id": {"type": "string", "pattern": "^settlement_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 5},
+            "state": {"const": "released"},
+            "release_phase": {"const": "post_dispatch"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "settled_at": {"type": "string", "format": "date-time"},
+            "currency": {"const": "USD"},
+            "actual_amount": {"const": "0"},
+            "released_amount": {"$ref": "common.schema.json#/$defs/amount"},
+            "usage_digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "actual_provenance_complete": {"const": true},
+            "atomic": {"const": true}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["settlement_id", "sequence", "state", "reservation_id", "observed_at", "currency", "actual_amount", "released_amount", "usage_digest", "reservation_state", "reconciliation_required", "atomic"],
+          "properties": {
+            "settlement_id": {"type": "string", "pattern": "^settlement_[A-Za-z0-9._-]{3,127}$"},
+            "sequence": {"type": "integer", "minimum": 5},
+            "state": {"const": "outcome_unknown"},
+            "reservation_id": {"type": "string", "pattern": "^reservation_[A-Za-z0-9._-]{3,127}$"},
+            "observed_at": {"type": "string", "format": "date-time"},
+            "currency": {"const": "USD"},
+            "actual_amount": {"type": "null"},
+            "released_amount": {"const": "0"},
+            "usage_digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "reservation_state": {"const": "remains_reserved"},
+            "reconciliation_required": {"const": true},
+            "atomic": {"const": true}
+          }
+        }
+      ]
+    }
+  }
+}

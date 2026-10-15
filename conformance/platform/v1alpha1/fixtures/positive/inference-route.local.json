@@ -1,0 +1,14 @@
+{
+  "schema_id": "reasoning.platform.inference-route",
+  "schema_version": "1.0.0-alpha.1",
+  "route_id": "route_local_ollama",
+  "display_name": "Local model service",
+  "provider": "provider_local",
+  "location": "local",
+  "harness_ids": ["codex", "reasoning-cloud"],
+  "model_patterns": ["local/*"],
+  "model_options": ["local/qwen3"],
+  "reasoning_efforts": ["none", "low", "medium", "high"],
+  "pricing_catalog_id": "catalog_local_models",
+  "credential_custody": "device_local"
+}

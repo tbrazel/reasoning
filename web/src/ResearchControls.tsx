@@ -1,0 +1,270 @@
+import React, { useEffect, useRef, useState } from "react";
+import { availableEfforts } from "./ReasoningEffort";
+import { createPortal } from "react-dom";
+import { ApiError, OrganizationPrices, aborted, decimalBudget, errorMessage, request, topicPath, usd } from "./organization-api";
+import { ModelPicker } from "./ModelBrowser";
+import { modelOptionGroups } from "./modelRecommendations";
+import { MathematicsBrowser, ResearchMarkdown } from "./MathematicsBrowser";
+import { ResearchFiles } from "./ResearchFiles";
+import "./research-controls.css";
+import { useTopicCommand } from "./TopicCommands";
+
+export const RESEARCH_TOOLS = ["history", "arxiv", "web", "knowledge", "workflows", "compute"] as const;
+export type ResearchTool = typeof RESEARCH_TOOLS[number];
+export const TOOL_LABELS: Record<ResearchTool, string> = {
+  history: "Conversation history", arxiv: "Mathematical literature & databases", web: "Web", knowledge: "Research ledger & sources", workflows: "Gamma workflows", compute: "Compute",
+};
+type Goal = { id: string; objective: string; acceptance: string[]; owned_by: string; model: string; status: string;
+  budget_microusd: number; used_or_held_microusd: number; max_turns: number; max_tool_calls: number;
+  turns: number; tool_calls: number; deadline_at: number; reason: string | null;
+  events: { sequence: number; created_at: number; event: { type: string; summary?: string; receipt_id?: string; name?: string } }[] };
+type Context = { snapshot: { messages: { role: string; content: string }[]; memory_revision?: number; input_token_upper_bound?: number;
+  through_sequence?: number; pinned_message_ids?: string[]; [key: string]: unknown } | null; working_memory: { body: unknown } | null;
+  system_prompt: string; prompt_version: string; last_call_context?: unknown; memory_versions?: unknown[];
+  pins?: { id: string; sequence: number; content: string }[] };
+type Proposal = { id: string; status: string; reviewed_by: string | null; body: { action: string; title?: string; [key: string]: unknown } };
+type ToolReceipt = { id: string; name: string; status: string; created_at: number };
+export type GoalAttempt = { client_id: string; objective: string; acceptance: string[]; model: string; budget_microusd: number; effort?: string | null;
+  max_turns: number; max_tool_calls: number; duration_seconds: number };
+
+export function ResearchInstructions({ instructions, loading, error = "", onInspect }: {
+  instructions: { system_prompt: string; prompt_version: string } | null; loading: boolean;
+  error?: string; onInspect?: () => void;
+}) {
+  return <article className="org-message org-system-message" aria-label="Research instructions">
+    <details onToggle={(event) => { if (event.currentTarget.open) onInspect?.(); }}><summary>System prompt</summary>
+      {instructions ? <><small>{instructions.prompt_version}</small><ResearchMarkdown>{instructions.system_prompt}</ResearchMarkdown></>
+        : <p>{loading ? "Loading system prompt…" : "System prompt unavailable. Try refreshing."}</p>}
+      {error && <p role="alert" className="org-error">{error}</p>}
+    </details>
+  </article>;
+}
+
+export function goalCommand(text: string): string | null {
+  const match = text.trim().match(/^\/goal(?:\s+([\s\S]*))?$/); return match ? (match[1] ?? "").trim() : null;
+}
+
+export function captureGoal({ objective, acceptance, model, budget, turns, tools, hours, clientId }: {
+  objective: string; acceptance: string; model: string; budget: string; turns: string; tools: string; hours: string; clientId: string;
+}): GoalAttempt {
+  const criteria = acceptance.split("\n").map((item) => item.trim()).filter(Boolean);
+  const maximumTurns = Number(turns), maximumTools = Number(tools), duration = Number(hours) * 3600, cost = decimalBudget(budget);
+  if (!objective.trim() || objective.trim().length > 8000 || !criteria.length || criteria.length > 20 || criteria.some((item) => item.length > 2000)
+    || !model || cost < 1 || cost > 1e12 || !Number.isInteger(maximumTurns) || maximumTurns < 1 || maximumTurns > 100
+    || !Number.isInteger(maximumTools) || maximumTools < 1 || maximumTools > 1000 || !Number.isInteger(duration) || duration < 60 || duration > 86400) {
+    throw new Error("Choose an objective, completion criteria, model, and valid limits.");
+  }
+  return Object.freeze({ client_id: clientId, objective: objective.trim(), acceptance: Object.freeze(criteria) as unknown as string[],
+    model, budget_microusd: cost, max_turns: maximumTurns, max_tool_calls: maximumTools, duration_seconds: duration });
+}
+
+export function ResearchGoalSummary({ goal, canControl, busy, onControl }: { goal: Goal; canControl: boolean; busy: boolean;
+  onControl: (status: "active" | "paused" | "cancelled") => void }) {
+  return <section className="org-research-goal" aria-label="Research goal"><header><strong>{goal.objective}</strong><span role="status">{goal.status.replaceAll("_", " ")}</span></header>
+    <p>{goal.turns}/{goal.max_turns} turns · {goal.tool_calls}/{goal.max_tool_calls} tools · {goal.model.startsWith("bot/")
+      ? "Owner's CLI account; charges tracked externally" : `${usd(goal.used_or_held_microusd)} used or held / ${usd(goal.budget_microusd)} limit`}</p>
+    {goal.reason && <p>{goal.reason}</p>}
+    <details><summary>Completion criteria and checkpoints</summary><ul>{goal.acceptance.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      {goal.events.filter((event) => event.event.summary).slice(0, 3).map((event) => <p key={event.sequence}>{event.event.summary}</p>)}</details>
+  </section>;
+}
+
+export function ResearchControls({ organizationId, topicId, userId, selectedModel, catalog, allowedModels, canWrite, canManage, online,
+  goalDraft, onGoalDraftDone, onGoalStarted, onAuthLost, toolbarTarget, onSettingsChanged, selectedEffort = null }: {
+  organizationId: string; topicId: string; userId: string; selectedModel: string; canWrite: boolean; canManage: boolean; online: boolean;
+  catalog: OrganizationPrices | null; allowedModels: string[];
+  goalDraft: string | null; onGoalDraftDone: () => void; onGoalStarted: (objective: string) => void; onAuthLost: () => void;
+  toolbarTarget: HTMLElement | null;
+  selectedEffort?: string | null;
+  onSettingsChanged?: () => void;
+}) {
+  const [goal, setGoal] = useState<Goal | null>(null); const [enabled, setEnabled] = useState<ResearchTool[]>([...RESEARCH_TOOLS]);
+  const [context, setContext] = useState<Context | null>(null); const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [pane, setPane] = useState<"goal" | "context" | "tools" | "proposals" | "ledger" | "files" | "reviews" | null>(null);
+  const [reviewer, setReviewer] = useState("");
+  const [reviewEnabled, setReviewEnabled] = useState(true), [profile, setProfile] = useState("workbench");
+  const [additionalInstructions, setAdditionalInstructions] = useState("");
+  const [profiles, setProfiles] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [computeAllowance, setComputeAllowance] = useState(0);
+  const [reviews, setReviews] = useState<{ id: string; status: string; requested_by: string; reviewer_model: string;
+    result: { report?: string; error?: string; distinct_model?: boolean; verdict?: { verdict: string } } | null }[]>([]);
+  const [createOpen, setCreateOpen] = useState(false); const [objective, setObjective] = useState("");
+  const [goalModel, setGoalModel] = useState("");
+  const [goalEffort, setGoalEffort] = useState(selectedEffort ?? "");
+  const [acceptance, setAcceptance] = useState(""); const [budget, setBudget] = useState("");
+  const [turns, setTurns] = useState("10"); const [toolLimit, setToolLimit] = useState("100"); const [hours, setHours] = useState("1");
+  const [attempt, setAttempt] = useState<GoalAttempt | null>(null); const [clientId, setClientId] = useState(() => crypto.randomUUID());
+  const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [refresh, setRefresh] = useState(0);
+  const [pollError, setPollError] = useState("");
+  const [receipt, setReceipt] = useState<unknown>(null);
+  const [recentTools, setRecentTools] = useState<ToolReceipt[]>([]);
+  const toolCursor = useRef(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const objectiveField = useRef<HTMLTextAreaElement>(null);
+  const acceptanceField = useRef<HTMLTextAreaElement>(null);
+  const root = topicPath(organizationId, topicId);
+  const toolModels = allowedModels.filter((id) => catalog?.models.some((model) => model.id === id && model.supports_tools));
+  const goalModelGroups = modelOptionGroups(toolModels, catalog);
+  useEffect(() => {
+    if (goalDraft !== null) { if (!attempt) setObjective(goalDraft); setCreateOpen(true); setError(""); }
+  }, [goalDraft]);
+  useEffect(() => {
+    if (createOpen) { dialog.current?.showModal(); (objective.trim() ? acceptanceField.current : objectiveField.current)?.focus(); }
+  }, [createOpen]);
+  useEffect(() => {
+    if (createOpen && !attempt) setGoalModel((current) => toolModels.includes(current) ? current : toolModels.includes(selectedModel) ? selectedModel
+      : goalModelGroups.recommended[0] ?? toolModels[0] ?? "");
+  }, [createOpen, selectedModel, catalog, allowedModels]);
+  const fail = (cause: unknown) => { if (cause instanceof ApiError && cause.status === 401) onAuthLost(); else setError(errorMessage(cause)); };
+  useEffect(() => {
+    const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const [current, pending, toolReceipts, checked] = await Promise.all([
+          request<Goal | null>(root + "/goal", { signal: controller.signal }),
+          request<Proposal[]>(root + "/research-proposals", { signal: controller.signal }),
+          request<ToolReceipt[]>(root + "/research-tools?after=" + toolCursor.current, { signal: controller.signal }),
+          request<typeof reviews>(root + "/mathematical-reviews", { signal: controller.signal }),
+        ]);
+        if (controller.signal.aborted) return; setGoal(current); setProposals(pending); setReviews(checked); setPollError("");
+        if (toolReceipts.length) {
+          toolCursor.current = Math.max(toolCursor.current, ...toolReceipts.map((item) => item.created_at));
+          setRecentTools((previous) => [...new Map([...previous, ...toolReceipts].map((item) => [item.id, item])).values()]
+            .sort((a, b) => b.created_at - a.created_at).slice(0, 5));
+        }
+      } catch (cause) {
+        if (!aborted(cause)) {
+          if (cause instanceof ApiError && cause.status === 401) onAuthLost();
+          else setPollError("Unable to refresh research status; reconnecting. " + errorMessage(cause));
+        }
+      }
+      if (!controller.signal.aborted) timer = setTimeout(poll, 2500);
+    };
+    void poll();
+    void request<{ tools: ResearchTool[]; reviewer_model?: string; compute_allowance_cpu_seconds?: number;
+      review_enabled?: boolean; prompt_profile?: string; additional_instructions?: string;
+      profiles?: { id: string; name: string; description: string }[] }>(root + "/research-settings", { signal: controller.signal }).then((value) => {
+      if (!controller.signal.aborted) { setEnabled(value.tools); setReviewer(value.reviewer_model ?? ""); setComputeAllowance(value.compute_allowance_cpu_seconds ?? 0);
+        setReviewEnabled(value.review_enabled ?? true); setProfile(value.prompt_profile ?? "workbench");
+        setAdditionalInstructions(value.additional_instructions ?? ""); setProfiles(value.profiles ?? []); }
+    }).catch((cause) => { if (!aborted(cause)) fail(cause); });
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [root, refresh, onAuthLost]);
+  const loadContext = async () => {
+    setPane(pane === "context" ? null : "context"); setError("");
+    try { setContext(await request<Context>(root + "/research-context")); } catch (cause) { fail(cause); }
+  };
+  const control = async (status: "active" | "paused" | "cancelled") => {
+    if (!goal) return; setBusy(true); setError("");
+    try { await request(root + "/goal/" + goal.id, { method: "PATCH", body: { status } }); setRefresh((value) => value + 1); }
+    catch (cause) { fail(cause); } finally { setBusy(false); }
+  };
+  const closeGoal = () => { setCreateOpen(false); onGoalDraftDone(); };
+  const pending = proposals.filter((proposal) => ["pending", "reviewing"].includes(proposal.status));
+  const activeTool = recentTools.find((tool) => tool.status === "requested");
+  useTopicCommand(topicId, command => {
+    if (command === "context") { void loadContext(); return; }
+    if (["ledger", "files", "goal", "tools", "proposals", "reviews"].includes(command)) {
+      if (command === "goal" && !goal && canWrite) { setCreateOpen(true); return; }
+      setPane(current => current === command ? null : command as typeof pane);
+    }
+  });
+  return <div className="org-research-controls">
+    {toolbarTarget && createPortal(<div className="org-research-toolbar" aria-label="Research actions">
+    {(goal?.status === "active" || activeTool) && <span role="status" className="org-goal-live"><i />{activeTool ? `Using ${activeTool.name.replaceAll("_", " ")}` : "Working toward your goal"}</span>}
+  </div>, toolbarTarget)}
+    {pane && <button type="button" aria-label="Close research panel" onClick={() => setPane(null)}>×</button>}
+    {pane === "ledger" && <div className="org-research-pane"><MathematicsBrowser organizationId={organizationId} topicId={topicId} canWrite={canWrite} onAuthLost={onAuthLost} /></div>}
+    {pane === "files" && <div className="org-research-pane"><ResearchFiles organizationId={organizationId} topicId={topicId} canWrite={canWrite} onAuthLost={onAuthLost} /></div>}
+    {pane === "reviews" && <div className="org-research-pane">{reviews.map((review) => <details key={review.id}>
+      <summary>{review.result?.verdict?.verdict ?? review.status} · {review.reviewer_model}</summary>
+      <p className="org-help">Fresh-context {review.result?.distinct_model === false ? "same-model " : ""}LLM review, not formal certification.</p>
+      <ResearchMarkdown>{review.result?.report ?? review.result?.error ?? "Review has not returned a report."}</ResearchMarkdown>
+      {canWrite && (canManage || review.requested_by === userId) && ["pending", "running"].includes(review.status) && <button disabled={busy || !online} onClick={() => {
+        setBusy(true); void request(root + "/mathematical-reviews/" + review.id + "/cancel", { method: "POST", body: {} })
+          .then(() => setRefresh((value) => value + 1)).catch(fail).finally(() => setBusy(false));
+      }}>Cancel review</button>}
+    </details>)}</div>}
+    {error && <p role="alert" className="org-error">{error}</p>}
+    {pollError && <p role="alert" className="org-error">{pollError}</p>}
+    {pane === "goal" && <div className="org-research-pane">
+      {goal && <ResearchGoalSummary goal={goal} canControl={canWrite && (canManage || goal.owned_by === userId)} busy={busy || !online} onControl={(status) => void control(status)} />}
+      {canWrite && (!goal || !["active", "paused", "blocked"].includes(goal.status)) && <button disabled={!online || !selectedModel} onClick={() => { if (!attempt) setObjective(""); setCreateOpen(true); }}>{attempt ? "Retry pending goal" : "Start a goal"}</button>}
+      {!goal && <p className="org-help">Set a goal to keep the agent working across turns. You choose the stopping criteria and limits.</p>}
+      {goal?.events.filter((event) => event.event.receipt_id).slice(0, 5).map((event) => <button key={event.sequence} onClick={() => void request(root + "/research-tools/" + event.event.receipt_id).then(setReceipt).catch(fail)}>{event.event.name} receipt</button>)}
+      {receipt !== null && <details open><summary>Tool receipt</summary><pre>{JSON.stringify(receipt, null, 2)}</pre></details>}
+    </div>}
+    {pane === "context" && <div className="org-research-pane"><p className="org-help">Context uses cited working memory, pins, a token-budgeted recent tail, and retrieval. The complete conversation remains available.</p>
+      {!context && <p role="status">Loading context…</p>}
+      {context && <><small>{context.prompt_version} · {context.snapshot?.input_token_upper_bound?.toLocaleString() ?? "—"} input token upper bound
+        · memory revision {context.snapshot?.memory_revision ?? "none"} · {context.pins?.length ?? context.snapshot?.pinned_message_ids?.length ?? 0} pins</small>
+        <details><summary>System instructions</summary><pre>{context.system_prompt}</pre></details>
+        <details><summary>Working memory</summary><pre>{JSON.stringify(context.working_memory?.body ?? {}, null, 2)}</pre></details>
+        <details><summary>Pinned messages ({context.pins?.length ?? 0})</summary>{context.pins?.map((pin) => <p key={pin.id}>Message {pin.sequence}: {pin.content}</p>)}</details>
+        <details><summary>Memory revisions</summary><pre>{JSON.stringify(context.memory_versions ?? [], null, 2)}</pre></details>
+        <details><summary>Exact captured context</summary>{context.snapshot ? <pre>{JSON.stringify(context.snapshot.messages, null, 2)}</pre> : <p>Context is captured when the first model run starts.</p>}</details>
+        {context.last_call_context && <details><summary>Latest provider-call context</summary><pre>{JSON.stringify(context.last_call_context, null, 2)}</pre></details>}</>}
+    </div>}
+    {pane === "tools" && <div className="org-research-pane"><form onSubmit={(event) => {
+      event.preventDefault(); setBusy(true); setError(""); void request(root + "/research-settings", { method: "PUT", body: { tools: enabled, reviewer_model: reviewer || null,
+        review_enabled: reviewEnabled, prompt_profile: profile, additional_instructions: additionalInstructions, compute_allowance_cpu_seconds: computeAllowance } })
+        .then(() => { setRefresh((value) => value + 1); onSettingsChanged?.(); }).catch(fail).finally(() => setBusy(false));
+    }}><label>Research strategy<select aria-label="Research strategy" value={profile} disabled={!canWrite || busy} onChange={event => setProfile(event.target.value)}>
+      {profiles.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <p className="org-help">{profiles.find(item => item.id === profile)?.description} All strategies use the same granted tools and ledger.</p>
+      <label>Additional research instructions<textarea value={additionalInstructions} maxLength={8000} rows={2} disabled={!canWrite || busy}
+        onChange={event => setAdditionalInstructions(event.target.value)} /></label>
+      <div className="org-research-tool-grid">{RESEARCH_TOOLS.map((tool) => <label key={tool}><input type="checkbox" checked={enabled.includes(tool)} disabled={!canWrite || busy}
+      onChange={(event) => setEnabled((current) => event.target.checked ? [...current, tool] : current.filter((item) => item !== tool))} />{TOOL_LABELS[tool]}</label>)}</div>
+      <label><input type="checkbox" checked={reviewEnabled} disabled={!canWrite || busy} onChange={event => setReviewEnabled(event.target.checked)} />Fresh-context review</label>
+      <ModelPicker label="Reviewer override" models={allowedModels.filter(id => !id.startsWith("bot/"))} catalog={catalog} value={reviewer}
+        emptyLabel="Automatic reviewer" disabled={!canWrite || busy || !reviewEnabled} onChange={setReviewer} />
+      <button type="button" disabled={!canWrite || busy || !reviewer} onClick={() => setReviewer("")}>Use automatic reviewer</button>
+      <p className="org-help">{reviewer ? "Explicit reviewer override." : "Automatic: prefer another allowed model family; otherwise use a fresh context."} LLM review is not formal certification.</p>
+      <label>Monthly autonomous compute allowance (CPU seconds)<input type="number" min={0} max={1000000} value={computeAllowance} disabled={!canWrite || busy}
+        onChange={(event) => setComputeAllowance(Number(event.target.value))} /></label>
+      <p className="org-help">Research records save automatically. The selected reviewer uses the organization’s inference budget. Compute beyond this allowance and workflow execution require approval. Alpha topics are excluded.</p>
+      <button type="button" onClick={() => void loadContext()}>Inspect context</button>
+      {canWrite && <button disabled={busy || !online}>Save tools</button>}</form>
+      {recentTools.map((tool) => <button key={tool.id} onClick={() => void request(root + "/research-tools/" + tool.id).then(setReceipt).catch(fail)}>{tool.name.replaceAll("_", " ")} · {tool.status}</button>)}
+      {receipt !== null && <details open><summary>Tool receipt</summary><pre>{JSON.stringify(receipt, null, 2)}</pre></details>}
+    </div>}
+    {pane === "proposals" && <div className="org-research-pane">{pending.map((proposal) => <article key={proposal.id}><strong>{proposal.body.title ?? `Proposed ${proposal.body.action}`}</strong>
+      <details><summary>Review action</summary><pre>{JSON.stringify(proposal.body, null, 2)}</pre></details>
+      {canWrite && (proposal.status === "pending" || proposal.reviewed_by === userId) && <div className="org-research-goal-actions">
+        <button disabled={busy || !online} onClick={() => { setBusy(true); void request(root + "/research-proposals/" + proposal.id, { method: "POST", body: { approve: true } })
+          .then(() => setRefresh((value) => value + 1)).catch(fail).finally(() => setBusy(false)); }}>{proposal.status === "reviewing" ? "Resume approval" : "Approve"}</button>
+        {proposal.status === "pending" && <button disabled={busy || !online} onClick={() => { setBusy(true); void request(root + "/research-proposals/" + proposal.id, { method: "POST", body: { approve: false } })
+          .then(() => setRefresh((value) => value + 1)).catch(fail).finally(() => setBusy(false)); }}>Decline</button>}</div>}
+    </article>)}</div>}
+    {createOpen && <dialog className="org-dialog org-goal-dialog" ref={dialog} aria-label="Start a research goal" onCancel={closeGoal} onClose={closeGoal}>
+      <header><h2>Keep working toward a goal</h2><button type="button" aria-label="Close goal" onClick={closeGoal}>×</button></header>
+      <form onSubmit={(event) => {
+        event.preventDefault(); setBusy(true); setError("");
+        void (async () => { try {
+          const captured = attempt ?? { ...captureGoal({ objective, acceptance, model: goalModel,
+            budget: goalModel.startsWith("bot/") ? "0.000001" : budget, turns, tools: toolLimit, hours, clientId }),
+            effort: availableEfforts(catalog, goalModel).includes(goalEffort) ? goalEffort : null };
+          setAttempt(captured); const created = await request<Goal>(root + "/goal", { method: "POST", body: captured });
+          setGoal(created); setAttempt(null); setClientId(crypto.randomUUID()); closeGoal(); setPane("goal"); onGoalStarted(created.objective);
+        } catch (cause) {
+          if (cause instanceof ApiError && cause.status >= 400 && cause.status < 500 && cause.status !== 408) { setAttempt(null); setClientId(crypto.randomUUID()); }
+          fail(cause);
+        } finally { setBusy(false); } })();
+      }}>
+        <label>Goal<textarea required ref={objectiveField} maxLength={8000} rows={3} value={objective} disabled={busy || !!attempt} onChange={(event) => setObjective(event.target.value)} /></label>
+        <label>Done when…<textarea required ref={acceptanceField} maxLength={20000} rows={2} placeholder="One completion criterion per line" value={acceptance} disabled={busy || !!attempt} onChange={(event) => setAcceptance(event.target.value)} /></label>
+        <ModelPicker label="Goal model" models={toolModels} catalog={catalog} value={attempt?.model ?? goalModel}
+          onChange={model => { setGoalModel(model); setGoalEffort(""); }} effort={goalEffort} onEffortChange={setGoalEffort} disabled={busy || !!attempt} />
+        <p className="org-help">Goals need tool use to report checkpoints.{!toolModels.includes(selectedModel) && " Choose a supported goal model here."}</p>
+        <div className="org-goal-limits">{!goalModel.startsWith("bot/") && <label>Maximum USD<input required inputMode="decimal" value={budget} disabled={busy || !!attempt} onChange={(event) => setBudget(event.target.value)} /></label>}
+          <label>Hours<input required type="number" min={1 / 60} max={24} step="any" value={hours} disabled={busy || !!attempt} onChange={(event) => setHours(event.target.value)} /></label>
+          <label>Turns<input required type="number" min={1} max={100} value={turns} disabled={busy || !!attempt} onChange={(event) => setTurns(event.target.value)} /></label>
+          <label>Tool calls<input required type="number" min={1} max={1000} value={toolLimit} disabled={busy || !!attempt} onChange={(event) => setToolLimit(event.target.value)} /></label></div>
+        {error && <p role="alert" className="org-error">{error}</p>}
+        {attempt && <p className="org-help">Retry preserves the exact goal and limits until its receipt is known.</p>}
+        <button className="org-primary" disabled={busy || !online || (!attempt && !toolModels.includes(goalModel))}>{busy ? "Starting…" : attempt ? "Retry exact goal" : "Start goal"}</button>
+      </form>
+    </dialog>}
+  </div>;
+}

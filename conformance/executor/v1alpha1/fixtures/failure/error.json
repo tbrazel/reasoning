@@ -1,0 +1,11 @@
+{
+  "schema_id": "reasoning.executor.error",
+  "schema_version": "1.0.0-alpha.1",
+  "code": "IMAGE_INTEGRITY_MISMATCH",
+  "category": "integrity",
+  "message": "The embedded capability manifest digest did not match the signed image attestation.",
+  "retryable": false,
+  "occurred_at": "2026-09-01T00:00:02Z",
+  "event_id": "event_failure_003",
+  "details": {"stage": "preflight"}
+}

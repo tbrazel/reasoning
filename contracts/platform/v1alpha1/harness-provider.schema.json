@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/harness-provider.schema.json",
+  "title": "Reasoning HarnessProvider Descriptor",
+  "description": "A factual capability and session descriptor projected from the provider-neutral harness abstractions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "descriptor_id",
+    "harness_id",
+    "display_name",
+    "location",
+    "transport",
+    "adapter_version",
+    "protocol_version",
+    "event_version",
+    "session",
+    "features",
+    "access",
+    "supported_inference_route_ids",
+    "supported_compute_target_ids",
+    "credential_custody",
+    "limitations",
+    "conformance"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.harness-provider"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "descriptor_id": {"type": "string", "pattern": "^harness_provider_[A-Za-z0-9._-]{3,127}$"},
+    "harness_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "display_name": {"type": "string", "minLength": 1, "maxLength": 255},
+    "location": {"$ref": "common.schema.json#/$defs/location"},
+    "transport": {"enum": ["in_process", "local_process", "remote_service"]},
+    "adapter_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "protocol_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "event_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modes", "durability", "reconnect"],
+      "properties": {
+        "modes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "contains": {"const": "fresh"},
+          "items": {"enum": ["fresh", "resume", "fork"]}
+        },
+        "durability": {"enum": ["none", "process", "device", "service"]},
+        "reconnect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supported", "cursor", "after", "delivery", "deduplicate_by"],
+          "properties": {
+            "supported": {"type": "boolean"},
+            "cursor": {"const": "opaque"},
+            "after": {"const": "exclusive"},
+            "delivery": {"enum": ["at_most_once", "at_least_once"]},
+            "deduplicate_by": {"const": "event_id"}
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "streaming",
+        "tools",
+        "skills",
+        "structured_output",
+        "mcp",
+        "approvals",
+        "interrupt",
+        "steering",
+        "checkpoints",
+        "subagents",
+        "context_compaction",
+        "reports_usage",
+        "reports_cost",
+        "reasoning_visibility",
+        "reasoning_efforts"
+      ],
+      "properties": {
+        "streaming": {"type": "boolean"},
+        "tools": {"type": "boolean"},
+        "skills": {"type": "boolean"},
+        "structured_output": {"type": "boolean"},
+        "mcp": {"type": "boolean"},
+        "approvals": {"type": "boolean"},
+        "interrupt": {"type": "boolean"},
+        "steering": {"type": "boolean"},
+        "checkpoints": {"type": "boolean"},
+        "subagents": {"type": "boolean"},
+        "context_compaction": {"type": "boolean"},
+        "reports_usage": {"type": "boolean"},
+        "reports_cost": {"type": "boolean"},
+        "reasoning_visibility": {"enum": ["none", "summary", "streamed_summary"]},
+        "reasoning_efforts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["none", "low", "medium", "high", "xhigh", "max"]}
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspace", "network", "processes"],
+      "properties": {
+        "workspace": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["none", "read_only", "read_write"]}
+        },
+        "network": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["denied", "allowlisted", "unrestricted"]}
+        },
+        "processes": {"type": "boolean"}
+      }
+    },
+    "supported_inference_route_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^route_[A-Za-z0-9._-]{3,127}$"}
+    },
+    "supported_compute_target_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^target_[A-Za-z0-9._-]{3,127}$"}
+    },
+    "credential_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account_material", "inference_material", "reusable_material_exported"],
+      "properties": {
+        "account_material": {"enum": ["none", "device_local", "service_owned"]},
+        "inference_material": {"enum": ["none", "device_local", "service_owned", "route_scoped"]},
+        "reusable_material_exported": {"const": false}
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 512}
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suite_version", "status", "verified_capabilities"],
+      "properties": {
+        "suite_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+        "status": {"enum": ["not_run", "partial", "passed"]},
+        "verified_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      }
+    }
+  }
+}

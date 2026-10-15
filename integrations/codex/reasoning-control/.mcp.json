@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "reasoning-control": {
+      "command": "reasoning-ledger",
+      "args": ["control-mcp"],
+      "env": {
+        "REASONING_URL": "http://127.0.0.1:9119"
+      }
+    }
+  }
+}

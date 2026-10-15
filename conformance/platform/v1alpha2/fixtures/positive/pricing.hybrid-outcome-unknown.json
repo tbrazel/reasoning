@@ -1,0 +1,144 @@
+{
+  "schema_id": "reasoning.platform.pricing",
+  "schema_version": "1.0.0-alpha.2",
+  "pricing_lifecycle_id": "pricing_hybrid_unknown",
+  "operation": {
+    "operation_id": "operation_hybrid_unknown",
+    "kind": "hybrid",
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "idempotency_key": "hybrid-unknown-fixture-001",
+    "request_digest": "sha256:abababababababababababababababababababababababababababababababab",
+    "route_plan_id": "route_plan_hybrid_unknown"
+  },
+  "quote": {
+    "quote_id": "quote_hybrid_unknown",
+    "sequence": 1,
+    "issued_at": "2026-09-01T19:10:00Z",
+    "expires_at": "2026-09-01T19:20:00Z",
+    "currency": "USD",
+    "dimensions": [
+      {
+        "component_id": "price_component_unknown_input",
+        "kind": "inference",
+        "meter": "input_tokens",
+        "maximum_quantity": "100000",
+        "unit_price": "0.000002",
+        "maximum_amount": "0.200000",
+        "basis": "catalog"
+      },
+      {
+        "component_id": "price_component_unknown_output",
+        "kind": "inference",
+        "meter": "output_tokens",
+        "maximum_quantity": "20000",
+        "unit_price": "0.000010",
+        "maximum_amount": "0.200000",
+        "basis": "catalog"
+      },
+      {
+        "component_id": "price_component_unknown_vcpu",
+        "kind": "compute",
+        "meter": "vcpu_seconds",
+        "maximum_quantity": "600",
+        "unit_price": "0.000500",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      },
+      {
+        "component_id": "price_component_unknown_memory",
+        "kind": "compute",
+        "meter": "memory_gib_seconds",
+        "maximum_quantity": "3000",
+        "unit_price": "0.000100",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      }
+    ],
+    "maximum_amount": "1.000000",
+    "assumptions": ["Unknown provider outcomes retain the reservation for reconciliation."],
+    "catalog_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "reservation": {
+    "reservation_id": "reservation_hybrid_unknown",
+    "sequence": 2,
+    "quote_id": "quote_hybrid_unknown",
+    "state": "reserved",
+    "reserved_at": "2026-09-01T19:10:30Z",
+    "currency": "USD",
+    "reserved_amount": "1.000000",
+    "funding": "paid_balance",
+    "persisted_with_operation": true
+  },
+  "dispatches": [
+    {
+      "dispatch_id": "dispatch_inference_unknown",
+      "sequence": 3,
+      "kind": "inference",
+      "reservation_id": "reservation_hybrid_unknown",
+      "dispatched_at": "2026-09-01T19:11:00Z",
+      "request_id": "inference_hybrid_unknown"
+    },
+    {
+      "dispatch_id": "dispatch_compute_unknown",
+      "sequence": 4,
+      "kind": "compute",
+      "reservation_id": "reservation_hybrid_unknown",
+      "dispatched_at": "2026-09-01T19:11:05Z",
+      "job_id": "job_hybrid_unknown",
+      "executor_contract_version": "1.0.0-alpha.1"
+    }
+  ],
+  "usage": [
+    {
+      "usage_id": "usage_inference_unknown_operation",
+      "sequence": 5,
+      "kind": "inference",
+      "source": "provider_reported",
+      "dimensions": [
+        {"meter": "input_tokens", "quantity": "50000"},
+        {"meter": "output_tokens", "quantity": "10000"}
+      ],
+      "amount": "0.200000",
+      "currency": "USD",
+      "provenance": {
+        "route_id": "route_local_ollama",
+        "provider": "provider_local",
+        "model": "local/qwen3",
+        "request_id": "inference_hybrid_unknown"
+      }
+    },
+    {
+      "usage_id": "usage_compute_unknown_operation",
+      "sequence": 6,
+      "kind": "compute",
+      "source": "unknown",
+      "dimensions": [],
+      "amount": null,
+      "currency": "USD",
+      "provenance": {
+        "target_id": "target_local_container",
+        "job_id": "job_hybrid_unknown",
+        "image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capabilities_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "attestation_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "executor_provenance_id": "provenance_hybrid_unknown"
+      }
+    }
+  ],
+  "settlement": {
+    "settlement_id": "settlement_hybrid_unknown",
+    "sequence": 7,
+    "state": "outcome_unknown",
+    "reservation_id": "reservation_hybrid_unknown",
+    "observed_at": "2026-09-01T19:15:00Z",
+    "currency": "USD",
+    "actual_amount": null,
+    "released_amount": "0",
+    "usage_digest": "sha256:f330e1f64c34a408461cc6dba1687ff872549cc902e9904495cfb971849c16e6",
+    "reservation_state": "remains_reserved",
+    "reconciliation_required": true,
+    "atomic": true
+  }
+}

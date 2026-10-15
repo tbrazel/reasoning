@@ -1,0 +1,3 @@
+interface:
+  display_name: "Sequence Research"
+  short_description: "Investigate integer sequences with OEIS"

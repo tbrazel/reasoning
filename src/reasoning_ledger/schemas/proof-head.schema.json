@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/proof-head.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "claim_id", "proof_id", "current_revision_id", "abandoned"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+    "proof_id": {"type": "string", "pattern": "^prf_[0-9a-f]{24}$"},
+    "current_revision_id": {"type": "string", "pattern": "^prfrev_[0-9a-f]{24}$"},
+    "abandoned": {"type": "boolean"}
+  }
+}

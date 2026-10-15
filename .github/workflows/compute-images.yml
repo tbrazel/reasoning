@@ -1,0 +1,104 @@
+name: Compute image acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      retain_candidate:
+        description: Retain private exact image archives for maintainer review
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - 'images/research-cpu/**'
+      - 'images/lean-mathlib/**'
+      - 'src/reasoning_ledger/agents/noether_worker.py'
+      - 'src/reasoning_ledger/image_release.py'
+      - 'src/reasoning_ledger/image_context.py'
+      - 'src/reasoning_ledger/image_ci.py'
+      - 'src/reasoning_ledger/image_acceptance.py'
+      - 'src/reasoning_ledger/server/compute*.py'
+      - 'contracts/executor/**'
+      - 'LICENSE'
+      - 'NOTICE'
+      - '.github/ci/apt-network.conf'
+      - '.github/workflows/compute-images.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compute-images-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  images:
+    name: ${{ matrix.profile }} / real container acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        profile: [research-cpu, lean-mathlib]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Prepare ephemeral runner disk and OCI transport
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          sudo install -m 0644 .github/ci/apt-network.conf /etc/apt/apt.conf.d/99-reasoning-network
+          # These are disposable runner SDK installations, never repository or user data.
+          if test -d /opt/hostedtoolcache; then sudo du -sh /opt/hostedtoolcache; fi
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+          mkdir -p "$RUNNER_TEMP/reasoning-images" "$HOME/.docker/cli-plugins"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://github.com/docker/buildx/releases/download/v0.32.1/buildx-v0.32.1.linux-amd64 \
+            --output "$HOME/.docker/cli-plugins/docker-buildx"
+          echo '2bbc1b8ebc9a05287b01bc2fe6633ec5e2f53d58ee955ae69756d668e7098e5e  '"$HOME/.docker/cli-plugins/docker-buildx" | sha256sum --check
+          chmod 0755 "$HOME/.docker/cli-plugins/docker-buildx"
+          df -h "$RUNNER_TEMP" /var/lib/docker
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.11.16'
+      - run: uv sync --locked
+      - name: Build and execute exact pinned candidate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROFILE: ${{ matrix.profile }}
+          RETAIN_CANDIDATE: ${{ github.event_name == 'workflow_dispatch' && inputs.retain_candidate && '1' || '0' }}
+        run: |
+          arguments=()
+          if test "$RETAIN_CANDIDATE" = 1; then arguments+=(--retain-archive); fi
+          uv run --no-sync python -m reasoning_ledger.image_ci --source-root . \
+            --profile "$PROFILE" --output "$RUNNER_TEMP/reasoning-images" "${arguments[@]}"
+      - name: Report runner disk usage
+        if: always()
+        run: |
+          df -h "$RUNNER_TEMP" /var/lib/docker
+          sudo du -sh /var/lib/docker "$RUNNER_TEMP/reasoning-images"
+      - name: Retain exact private candidate for separate review
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.retain_candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-${{ github.sha }}-${{ matrix.profile }}
+          path: ${{ runner.temp }}/reasoning-images/candidate/${{ matrix.profile }}.oci.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Retain public evidence only
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.profile }}-acceptance-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/reasoning-images/candidate/image-evidence.json
+            ${{ runner.temp }}/reasoning-images/candidate/capabilities.json
+            ${{ runner.temp }}/reasoning-images/candidate/sbom.spdx.json
+            ${{ runner.temp }}/reasoning-images/acceptance/acceptance.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Release boundary
+        run: |
+          echo 'Candidate build and execution only. No public binary, registry approval, source audit or cloud activation is implied.' >> "$GITHUB_STEP_SUMMARY"

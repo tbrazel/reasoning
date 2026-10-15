@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-product-policy/v1alpha1/contract-bundle.schema.json",
+  "title": "Reasoning Cloud Product Policy Contract Bundle Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "bundle_id", "canonicalization", "encoding", "hash_algorithm", "members", "dependencies", "bundle_digest"],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-product-policy.contract-bundle"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "bundle_id": {"const": "reasoning-cloud-product-policy-v1alpha1"},
+    "canonicalization": {"const": "RFC 8785 JSON Canonicalization Scheme"},
+    "encoding": {"const": "UTF-8"},
+    "hash_algorithm": {"const": "SHA-256"},
+    "members": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "digest"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^(contracts|conformance)/[A-Za-z0-9._/-]+$", "maxLength": 255},
+          "digest": {"$ref": "common.schema.json#/$defs/digest"}
+        }
+      }
+    },
+    "dependencies": {
+      "const": [
+        {
+          "id": "cloud-client",
+          "version": "1.0.0-alpha.1",
+          "path": "contracts/cloud-client/v1alpha1/bundle-manifest.json",
+          "digest": "sha256:5c858b9346cfc796c50c7e2cc48ffee2d6c61334fc14f63d7ba24f46522e8bf3",
+          "internal_bundle_digest": "sha256:58f45ca5f9e5a53382b40444399e4cc792d297ead59b6387fd482ab72e0ad6b7"
+        }
+      ]
+    },
+    "bundle_digest": {"$ref": "common.schema.json#/$defs/digest"}
+  }
+}

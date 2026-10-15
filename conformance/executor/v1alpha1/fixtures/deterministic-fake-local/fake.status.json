@@ -1,0 +1,14 @@
+{
+  "schema_id": "reasoning.executor.job-status",
+  "schema_version": "1.0.0-alpha.1",
+  "job_id": "job_fixture_fake_001",
+  "idempotency_key": "fixture-fake-000000000001",
+  "spec_digest": "sha256:1f0ccc35a2b83cd5d26d3f6441ff520960fab06bcf8bda8bd2450158d661d0bc",
+  "state": "queued",
+  "delivery_attempt": 0,
+  "cancellation_requested": false,
+  "last_event_cursor": "opaque:fake:001",
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T00:00:00Z",
+  "result": null
+}

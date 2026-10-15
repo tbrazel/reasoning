@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/compatibility.schema.json",
+  "title": "Reasoning Platform Contract Compatibility Rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "family", "contracts", "dependencies", "rules"],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.compatibility"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "family": {"const": "reasoning-platform-v1alpha1"},
+    "contracts": {
+      "type": "array",
+      "minItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_id", "version", "schema_path"],
+        "properties": {
+          "schema_id": {"type": "string", "pattern": "^reasoning\\.platform\\.[a-z-]+$"},
+          "version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+          "schema_path": {"type": "string", "pattern": "^[a-z-]+\\.schema\\.json$"}
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executor", "cloud_execution_api", "capability_manifest"],
+      "properties": {
+        "executor": {"const": "1.0.0-alpha.1"},
+        "cloud_execution_api": {"const": "1.0.0-alpha.1"},
+        "capability_manifest": {"const": "1.0.0-alpha.1"}
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prerelease_negotiation",
+        "unknown_schema",
+        "unknown_required_field",
+        "additive_change",
+        "breaking_change",
+        "legacy_selection_migration",
+        "local_project_migration",
+        "digest_canonicalization",
+        "digest_encoding",
+        "digest_algorithm"
+      ],
+      "properties": {
+        "prerelease_negotiation": {"const": "exact_version"},
+        "unknown_schema": {"const": "reject"},
+        "unknown_required_field": {"const": "reject"},
+        "additive_change": {"const": "new_version_and_explicit_consumer_support"},
+        "breaking_change": {"const": "new_major_version_with_compatibility_window"},
+        "legacy_selection_migration": {"const": "separate_observed_fields_or_explicit_legacy_unknown_never_infer"},
+        "local_project_migration": {"const": "remain_local_and_unlinked"},
+        "digest_canonicalization": {"const": "RFC 8785 JSON Canonicalization Scheme"},
+        "digest_encoding": {"const": "UTF-8"},
+        "digest_algorithm": {"const": "SHA-256"}
+      }
+    }
+  }
+}

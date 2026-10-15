@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reasoning.example.org/contracts/swarm/v1alpha1/swarm-experiment.schema.json",
+  "title": "Reasoning swarm experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "substrate",
+    "population",
+    "state_space",
+    "dynamics",
+    "scheduler",
+    "observables",
+    "stopping",
+    "replication"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "experiment_id": {"type": "string", "pattern": "^swexp_[a-z0-9][a-z0-9_-]*$"},
+    "revision_id": {"type": "string", "pattern": "^swrev_[0-9a-f]{24}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 200},
+    "description": {"type": "string", "maxLength": 10000},
+    "substrate": {"$ref": "#/$defs/substrate"},
+    "population": {"$ref": "#/$defs/population"},
+    "state_space": {"$ref": "#/$defs/stateSpace"},
+    "dynamics": {"$ref": "#/$defs/dynamics"},
+    "scheduler": {"$ref": "#/$defs/scheduler"},
+    "interventions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/intervention"},
+      "default": []
+    },
+    "observables": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "consensus",
+          "order",
+          "disagreement",
+          "entropy",
+          "coordination",
+          "winding",
+          "defects",
+          "sector"
+        ]
+      }
+    },
+    "stopping": {"$ref": "#/$defs/stopping"},
+    "replication": {"$ref": "#/$defs/replication"},
+    "metadata": {"type": "object", "maxProperties": 64}
+  },
+  "$defs": {
+    "substrate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "template", "verification"],
+      "properties": {
+        "kind": {"enum": ["graph", "simplicial_complex"]},
+        "template": {
+          "enum": ["path", "cycle", "complete", "grid", "cylinder", "torus", "sphere", "custom"]
+        },
+        "parameters": {"type": "object", "maxProperties": 16},
+        "directed": {"type": "boolean", "default": false},
+        "vertex_count": {"type": "integer", "minimum": 2, "maximum": 512},
+        "coordinates": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {"type": "integer"}
+          }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 32768,
+          "items": {
+            "type": "array",
+            "prefixItems": [{"type": "integer", "minimum": 0}, {"type": "integer", "minimum": 0}],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "facets": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {"type": "integer", "minimum": 0}
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "version", "source_commit"],
+          "properties": {
+            "provider": {"const": "noether"},
+            "version": {"const": "0.3.1"},
+            "source_commit": {"const": "ca8fc50f3d9a902a827fbd558dba138ad7bf0f8f"}
+          }
+        }
+      }
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_policy"],
+      "properties": {
+        "size": {"type": "integer", "minimum": 2, "maximum": 512},
+        "agent_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {"enum": ["simulated", "model"]},
+            "executor_id": {"const": "reasoning-native"},
+            "model": {"type": "string", "minLength": 1, "maxLength": 200},
+            "effort": {"enum": ["none", "low", "medium", "high", "xhigh", "max", null]},
+            "system_prompt": {"type": "string", "maxLength": 20000},
+            "max_calls": {"type": "integer", "minimum": 1, "maximum": 512},
+            "max_output_tokens": {"type": "integer", "minimum": 32, "maximum": 8192},
+            "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 1800},
+            "max_cost_usd": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000}
+          }
+        }
+      }
+    },
+    "stateSpace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "location", "initialization"],
+      "properties": {
+        "kind": {"enum": ["categorical", "simplex", "circle", "binary"]},
+        "location": {"enum": ["vertices", "edges"]},
+        "labels": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 100}
+        },
+        "initialization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {"enum": ["random", "uniform", "polarized", "winding", "all_zero", "explicit"]},
+            "winding": {"type": "integer", "minimum": -32, "maximum": 32},
+            "values": {"type": "array", "maxItems": 32768}
+          }
+        }
+      }
+    },
+    "dynamics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["voter", "majority", "degroot", "qsg", "circular_midpoint", "simplex_consensus", "z2_gauge", "model_update"]
+        },
+        "adaptation": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "message_mode": {"enum": ["hard", "soft", "top_m"]},
+        "top_m": {"type": "integer", "minimum": 1, "maximum": 32},
+        "temperature": {"type": "number", "exclusiveMinimum": 0, "maximum": 10}
+      }
+    },
+    "scheduler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "steps"],
+      "properties": {
+        "kind": {"enum": ["asynchronous", "synchronous", "higher_order"]},
+        "steps": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "interaction_dimension": {"type": "integer", "minimum": 1, "maximum": 8},
+        "drop_probability": {"type": "number", "minimum": 0, "maximum": 1},
+        "measurement_interval": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "snapshot_interval": {"type": "integer", "minimum": 1, "maximum": 1000}
+      }
+    },
+    "intervention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_step", "kind"],
+      "properties": {
+        "at_step": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "kind": {"enum": ["set_state", "broadcast", "remove_edge", "add_edge"]},
+        "target": {"type": "integer", "minimum": 0},
+        "edge": {
+          "type": "array",
+          "prefixItems": [{"type": "integer", "minimum": 0}, {"type": "integer", "minimum": 0}],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "value": {},
+        "strength": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "stopping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["fixed_steps", "consensus", "fixed_or_consensus"]},
+        "consensus_tolerance": {"type": "number", "minimum": 0, "maximum": 1},
+        "patience": {"type": "integer", "minimum": 1, "maximum": 10000}
+      }
+    },
+    "replication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repetitions", "seed"],
+      "properties": {
+        "repetitions": {"type": "integer", "minimum": 1, "maximum": 128},
+        "seed": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807}
+      }
+    }
+  }
+}

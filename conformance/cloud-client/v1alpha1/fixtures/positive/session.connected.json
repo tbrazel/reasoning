@@ -1,0 +1,8 @@
+{
+  "schema_id": "reasoning.cloud-client.session",
+  "schema_version": "1.0.0-alpha.1",
+  "state": "connected",
+  "actor": {"type": "user", "id": "user_alice"},
+  "tenant_id": "tenant_alpha",
+  "capability_snapshot_digest": "sha256:ff10e25396c5960240211fa39abd3e8593b2e93007c3189de64441dee1b28c7d"
+}

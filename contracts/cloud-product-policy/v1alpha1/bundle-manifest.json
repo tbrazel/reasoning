@@ -1,0 +1,60 @@
+{
+  "schema_id": "reasoning.cloud-product-policy.contract-bundle",
+  "schema_version": "1.0.0-alpha.1",
+  "bundle_id": "reasoning-cloud-product-policy-v1alpha1",
+  "canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "encoding": "UTF-8",
+  "hash_algorithm": "SHA-256",
+  "members": [
+    {
+      "path": "conformance/cloud-product-policy/v1alpha1/fixtures/negative/cases.json",
+      "digest": "sha256:69192bf4bdd8eaf1c5a3b69a3595d167213a1fed20009ce0e8c5e281f0bf8e68"
+    },
+    {
+      "path": "conformance/cloud-product-policy/v1alpha1/fixtures/positive/account-policy.json",
+      "digest": "sha256:e57c5b2976daaf21281280f89f65f18aa2ce45462a21b458467e0d4b0b0a443f"
+    },
+    {
+      "path": "conformance/cloud-product-policy/v1alpha1/fixtures/positive/optional-use-change.grant.json",
+      "digest": "sha256:1589416e9070aae9731115156e0b41d44bead275c0e5fbbd8fe56a5be8ac68fc"
+    },
+    {
+      "path": "conformance/cloud-product-policy/v1alpha1/suite.json",
+      "digest": "sha256:4f13793a0081a4051afabbebe5cb40faf63aeb735936d2f1c0f42a7f1344994a"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/account-policy.schema.json",
+      "digest": "sha256:8fb13652127d992da83615bda42b1bfcc1e8be3afa170c5993c7a7b04367bded"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/common.schema.json",
+      "digest": "sha256:df9868118564c20fa0cd071df8ffb7abecb6c18349726effbe8ae830f0522dd9"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/compatibility.json",
+      "digest": "sha256:2434b87521a68b7c98d686c697107366d5a9edcf96dfa6d3efd9729770972803"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/compatibility.schema.json",
+      "digest": "sha256:0084c94656cb8dbb005419489f7ce2ed53a09458997aa1673f19a1aa731683df"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/contract-bundle.schema.json",
+      "digest": "sha256:9c08ab288a751ec827c8c57d49a09d9d3f23ef442da99086e9ee758f329ca15c"
+    },
+    {
+      "path": "contracts/cloud-product-policy/v1alpha1/optional-use-change.schema.json",
+      "digest": "sha256:b26f6bbde94d6cb2ebcc5724db342743e7ab97388dcbf9fa45490ec6881f6613"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "cloud-client",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/cloud-client/v1alpha1/bundle-manifest.json",
+      "digest": "sha256:5c858b9346cfc796c50c7e2cc48ffee2d6c61334fc14f63d7ba24f46522e8bf3",
+      "internal_bundle_digest": "sha256:58f45ca5f9e5a53382b40444399e4cc792d297ead59b6387fd482ab72e0ad6b7"
+    }
+  ],
+  "bundle_digest": "sha256:c78d03c0204a2524af0e78209a4cc51c1aaf40cac092b3fb4d0063cc81540b26"
+}

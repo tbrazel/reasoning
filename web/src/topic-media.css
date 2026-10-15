@@ -1,0 +1,13 @@
+.topic-image { display: block; max-width: min(100%, 48rem); max-height: 32rem; object-fit: contain; margin: .35rem 0; }
+.topic-pdf { max-width: min(100%, 52rem); margin: .35rem 0; }
+.topic-pdf > summary { cursor: pointer; color: var(--accent, #6e96d8); }
+.topic-pdf .artifact-pdf-scroll { height: min(60vh, 36rem); overflow-y: auto; }
+.topic-pdf .artifact-pdf-toolbar { display: flex; gap: .5rem; justify-content: space-between; flex-wrap: wrap; }
+.topic-pdf .artifact-pdf-toolbar-group { display: flex; gap: .35rem; align-items: center; }
+.topic-pdf .artifact-pdf-page { position: relative; width: 100%; margin: .5rem 0; background: white; color: #222; }
+.topic-pdf canvas { max-width: 100%; }
+.topic-pdf .artifact-pdf-page-number { position: absolute; bottom: .25rem; right: .4rem; }
+.topic-attachment-control { display: inline-flex; gap: .35rem; align-items: center; }
+.org-app .org-upload-play { width:32px; min-height:32px; padding:4px; border:0; background:transparent; color:var(--foreground); }
+.org-upload-play > span { display:inline-block; transform:rotate(-90deg); }
+.org-upload-play:disabled { color:var(--muted); }

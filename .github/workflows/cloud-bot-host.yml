@@ -1,0 +1,36 @@
+name: Cloud bot host acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'src/reasoning_ledger/deployment/bot_cloud*.py'
+      - 'src/reasoning_ledger/source_*.py'
+      - 'tests/fixtures/cloud_bot_host_acceptance.py'
+      - '.github/workflows/cloud-bot-host.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-bot-host-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    name: Ubuntu bot host (${{ matrix.engine }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [codex, claude]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.11.16'
+      - run: uv sync --locked --extra test
+      - run: uv run --no-sync python -m reasoning_ledger.source_release --output reasoning-source.zip
+      - name: Install on disposable runner and verify tools inside the bot sandbox
+        run: sudo env GITHUB_ACTIONS=true PYTHONPATH="$PWD/src" "$PWD/.venv/bin/python" tests/fixtures/cloud_bot_host_acceptance.py ${{ matrix.engine }}

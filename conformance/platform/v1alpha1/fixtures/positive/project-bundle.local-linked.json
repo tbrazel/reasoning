@@ -1,0 +1,108 @@
+{
+  "schema_id": "reasoning.platform.project-bundle",
+  "schema_version": "1.0.0-alpha.1",
+  "bundle_id": "project_bundle_local_algebra_linked_001",
+  "project": {
+    "project_id": "project_local_algebra",
+    "title": "Local algebra project",
+    "origin": "local",
+    "revision_id": "revision_local_001",
+    "revision_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "created_at": "2026-09-01T18:00:00Z"
+  },
+  "linkage": {
+    "state": "linked",
+    "link_id": "project_link_algebra_001",
+    "tenant_id": "tenant_alpha",
+    "cloud_project_id": "project_cloud_algebra",
+    "linked_at": "2026-09-01T18:01:00Z",
+    "link_policy_digest": "sha256:953913f66c921055182ae1b8acd213e1b4d8a88c486816e4b284711115588b24",
+    "approval": {
+      "approval_id": "approval_project_link_001",
+      "actor": {"type": "user", "id": "user_alice"},
+      "approved_at": "2026-09-01T18:01:00Z",
+      "scope": "project_link",
+      "approved_link_policy_digest": "sha256:953913f66c921055182ae1b8acd213e1b4d8a88c486816e4b284711115588b24"
+    },
+    "authorized_data_classes": ["project_files", "prompts", "artifacts"],
+    "retained_output_classes": ["outputs", "logs", "operation_metadata", "usage", "provenance"],
+    "future_transfers_revocable": true,
+    "revoked_at": null
+  },
+  "transfer_manifests": [
+    {
+      "transfer_id": "transfer_hybrid_001",
+      "operation_id": "operation_hybrid_matrix",
+      "binding": {
+        "actor": {"type": "user", "id": "user_alice"},
+        "tenant_id": "tenant_alpha",
+        "project_id": "project_local_algebra",
+        "project_revision_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "mode": "linked_project",
+      "disclosure": {
+        "inputs": [
+          {
+            "artifact_id": "artifact_problem_statement",
+            "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "size_bytes": 284,
+            "media_type": "text/markdown",
+            "purpose": "inference_context"
+          },
+          {
+            "artifact_id": "artifact_polynomial_system",
+            "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "size_bytes": 1024,
+            "media_type": "application/json",
+            "purpose": "compute_input"
+          }
+        ],
+        "retained_cloud_data": [
+          {"kind": "outputs", "retention": "account_policy", "purpose": "Return the requested result."},
+          {"kind": "logs", "retention": "operation_lifetime", "purpose": "Diagnose this durable operation."},
+          {"kind": "operation_metadata", "retention": "indefinite_audit", "purpose": "Preserve idempotency and reconciliation."},
+          {"kind": "usage", "retention": "indefinite_audit", "purpose": "Settle the accepted quote."},
+          {"kind": "provenance", "retention": "indefinite_audit", "purpose": "Attribute the actual route and image."}
+        ],
+        "omitted_data_classes": [
+          "unlisted_project_files",
+          "local_harness_state",
+          "authentication_material",
+          "local_paths"
+        ]
+      },
+      "disclosure_digest": "sha256:b0b3befdbdf2eee18f70dd7e2def1c7ef5078bfc242d70316f45143a6fb5021c",
+      "approval": {
+        "approval_id": "approval_transfer_linked_001",
+        "actor": {"type": "user", "id": "user_alice"},
+        "approved_at": "2026-09-01T18:01:30Z",
+        "scope": "project_transfer",
+        "approved_disclosure_digest": "sha256:b0b3befdbdf2eee18f70dd7e2def1c7ef5078bfc242d70316f45143a6fb5021c"
+      },
+      "future_transfers_authorized": true
+    }
+  ],
+  "contents": [
+    {
+      "path": "README.md",
+      "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "size_bytes": 284,
+      "media_type": "text/markdown",
+      "class": "project_file"
+    },
+    {
+      "path": "inputs/cyclic5.json",
+      "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "size_bytes": 1024,
+      "media_type": "application/json",
+      "class": "artifact"
+    }
+  ],
+  "export": {
+    "created_at": "2026-09-01T18:02:00Z",
+    "created_by": {"type": "user", "id": "user_alice"},
+    "format": "reasoning-project-bundle+json",
+    "security_material": "excluded",
+    "server_policy": "excluded"
+  }
+}

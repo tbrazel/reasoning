@@ -1,0 +1,62 @@
+name: Public compute catalog verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_revision:
+        description: Exact original source revision encoded in the signed retained candidates
+        type: string
+        required: true
+      publications:
+        description: JSON map of profile to its successful publication Actions run ID
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: compute-combine-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    environment: compute-publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Prepare dedicated anonymous verification runner
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          sudo install -m 0644 .github/ci/apt-network.conf /etc/apt/apt.conf.d/99-reasoning-network
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.11.16'
+      - run: uv sync --locked
+      - name: Reverify exact signed publications with anonymous pull and real execution
+        env:
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+          PUBLICATION_RUNS: ${{ inputs.publications }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          umask 077
+          uv run --no-sync python -m reasoning_ledger.image_hosted combine \
+            --trusted-key images/publication/review-key.pem \
+            --output "$RUNNER_TEMP/reasoning-combined"
+      - name: Retain public approved catalog and bound completion evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: approved-compute-catalog-${{ inputs.source_revision }}
+          path: |
+            ${{ runner.temp }}/reasoning-combined/compute-images.json
+            ${{ runner.temp }}/reasoning-combined/combine.json
+            ${{ runner.temp }}/reasoning-combined/review-key.pem
+            ${{ runner.temp }}/reasoning-combined/published/
+          if-no-files-found: error
+          retention-days: 90

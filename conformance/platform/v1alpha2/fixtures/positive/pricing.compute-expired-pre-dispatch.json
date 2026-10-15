@@ -1,0 +1,72 @@
+{
+  "schema_id": "reasoning.platform.pricing",
+  "schema_version": "1.0.0-alpha.2",
+  "pricing_lifecycle_id": "pricing_compute_expired_pre_dispatch",
+  "operation": {
+    "operation_id": "operation_compute_expired_pre_dispatch",
+    "kind": "compute",
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "idempotency_key": "compute-expired-before-dispatch-001",
+    "request_digest": "sha256:9191919191919191919191919191919191919191919191919191919191919191",
+    "route_plan_id": "route_plan_compute_expired_pre_dispatch"
+  },
+  "quote": {
+    "quote_id": "quote_compute_expired_pre_dispatch",
+    "sequence": 1,
+    "issued_at": "2026-09-01T20:00:00Z",
+    "expires_at": "2026-09-01T20:10:00Z",
+    "currency": "USD",
+    "dimensions": [
+      {
+        "component_id": "price_component_expired_vcpu",
+        "kind": "compute",
+        "meter": "vcpu_seconds",
+        "maximum_quantity": "600",
+        "unit_price": "0.000500",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      },
+      {
+        "component_id": "price_component_expired_memory",
+        "kind": "compute",
+        "meter": "memory_gib_seconds",
+        "maximum_quantity": "3000",
+        "unit_price": "0.000100",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      }
+    ],
+    "maximum_amount": "0.600000",
+    "assumptions": ["No execution may begin after the quote expires."],
+    "catalog_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "reservation": {
+    "reservation_id": "reservation_compute_expired_pre_dispatch",
+    "sequence": 2,
+    "quote_id": "quote_compute_expired_pre_dispatch",
+    "state": "reserved",
+    "reserved_at": "2026-09-01T20:00:30Z",
+    "currency": "USD",
+    "reserved_amount": "0.600000",
+    "funding": "free_quota",
+    "persisted_with_operation": true
+  },
+  "dispatches": [],
+  "usage": [],
+  "settlement": {
+    "settlement_id": "settlement_compute_expired_pre_dispatch",
+    "sequence": 3,
+    "state": "released",
+    "release_phase": "pre_dispatch",
+    "release_reason": "quote_expired",
+    "reservation_id": "reservation_compute_expired_pre_dispatch",
+    "released_at": "2026-09-01T20:10:00Z",
+    "currency": "USD",
+    "actual_amount": "0",
+    "released_amount": "0.600000",
+    "reservation_state": "released",
+    "atomic": true
+  }
+}

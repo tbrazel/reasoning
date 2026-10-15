@@ -1,0 +1,240 @@
+{
+  "harness_fixture": "conformance/platform/v1alpha1/fixtures/positive/harness-provider.local.json",
+  "route_fixture": "conformance/platform/v1alpha1/fixtures/positive/route-plan.lhh.json",
+  "connector_fixture": "conformance/platform/v1alpha1/fixtures/positive/local-harness-connector.json",
+  "artifact_text": "{\"basis_count\":70}\n",
+  "job": {
+    "schema_id": "reasoning.executor.job-spec",
+    "schema_version": "1.0.0-alpha.1",
+    "job_id": "job_hybrid_cloud_001",
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "run_id": "run_hybrid_cloud_001",
+    "step_id": "step_grobner_basis_001",
+    "idempotency_key": "hybrid-submit-000000000001",
+    "submitted_at": "2026-09-01T18:05:00Z",
+    "executor": {
+      "adapter_id": "executor_cloud",
+      "adapter_version": "1.0.0-alpha.1",
+      "target_kind": "aws",
+      "target_id": "target_cloud_research_cpu"
+    },
+    "image": {
+      "repository": "registry.example.org/research-cpu",
+      "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "capabilities_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "attestation_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "command": {
+      "argv": [
+        "sage",
+        "-python",
+        "/opt/reasoning/conformance/noether-v0.1.0-smoke/cyclic5_shard.py",
+        "/inputs/cyclic5.json",
+        "/outputs/result.json"
+      ],
+      "working_directory": "/workspace"
+    },
+    "inputs": [
+      {
+        "artifact_id": "artifact_polynomial_system",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mount_path": "/inputs/cyclic5.json",
+        "read_only": true
+      }
+    ],
+    "resources": {
+      "cpu": 1,
+      "memory_bytes": 536870912,
+      "disk_bytes": 2147483648,
+      "pids": 128,
+      "wall_time_seconds": 300,
+      "artifact_bytes": 1048576
+    },
+    "deadline": "2026-09-01T18:12:00Z",
+    "cancellation": {"mode": "graceful_then_kill", "grace_period_seconds": 10},
+    "network_policy": {"mode": "denied", "allowed_destinations": []},
+    "outputs": [
+      {
+        "name": "result",
+        "path": "/outputs/result.json",
+        "media_type": "application/json",
+        "required": true,
+        "max_bytes": 1048576
+      }
+    ],
+    "log_policy": {"capture_stdout": true, "capture_stderr": true, "max_bytes": 1048576},
+    "workload_identity": {
+      "audience": "https://executor.example.org/v1/jobs",
+      "credential_reference": "connector-grant://connector_grant_hybrid_001",
+      "expires_at": "2026-09-01T18:14:00Z"
+    },
+    "provenance_required": [
+      "executor",
+      "image",
+      "capabilities",
+      "components",
+      "inputs",
+      "outputs",
+      "resource_usage",
+      "network_policy",
+      "timestamps",
+      "outcome"
+    ]
+  },
+  "accepted_status": {
+    "schema_id": "reasoning.executor.job-status",
+    "schema_version": "1.0.0-alpha.1",
+    "job_id": "job_hybrid_cloud_001",
+    "idempotency_key": "hybrid-submit-000000000001",
+    "spec_digest": "sha256:376cd32cb40ce33c1a07f33564d117765e61ddd5597a8103e9005bfd6c74af3d",
+    "state": "queued",
+    "delivery_attempt": 0,
+    "cancellation_requested": false,
+    "last_event_cursor": "opaque:hybrid:001",
+    "created_at": "2026-09-01T18:05:00Z",
+    "updated_at": "2026-09-01T18:05:00Z",
+    "result": null
+  },
+  "events": [
+    {
+      "schema_id": "reasoning.executor.job-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_001",
+      "job_id": "job_hybrid_cloud_001",
+      "sequence": 1,
+      "cursor": "opaque:hybrid:001",
+      "type": "job.accepted",
+      "state": "queued",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:05:00Z",
+      "payload": {"persisted": true}
+    },
+    {
+      "schema_id": "reasoning.executor.job-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_002",
+      "job_id": "job_hybrid_cloud_001",
+      "sequence": 2,
+      "cursor": "opaque:hybrid:002",
+      "type": "job.provisioning",
+      "state": "provisioning",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:05:01Z",
+      "payload": {"target_id": "target_cloud_research_cpu"}
+    },
+    {
+      "schema_id": "reasoning.executor.job-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_003",
+      "job_id": "job_hybrid_cloud_001",
+      "sequence": 3,
+      "cursor": "opaque:hybrid:003",
+      "type": "job.started",
+      "state": "running",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:05:02Z",
+      "payload": {"runner_version": "1.0.0-alpha.1"}
+    },
+    {
+      "schema_id": "reasoning.executor.job-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_004",
+      "job_id": "job_hybrid_cloud_001",
+      "sequence": 4,
+      "cursor": "opaque:hybrid:004",
+      "type": "artifact.committed",
+      "state": "running",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:05:03Z",
+      "payload": {
+        "artifact_id": "artifact_hybrid_result_001",
+        "digest": "sha256:9349619e4beed54d8895cfa0a69ba13d23437d6c57ccbfaaaadc2b7e2659e850",
+        "size_bytes": 19,
+        "media_type": "application/json",
+        "provenance_id": "provenance_hybrid_001"
+      }
+    },
+    {
+      "schema_id": "reasoning.executor.job-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_005",
+      "job_id": "job_hybrid_cloud_001",
+      "sequence": 5,
+      "cursor": "opaque:hybrid:005",
+      "type": "job.succeeded",
+      "state": "succeeded",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:05:04Z",
+      "payload": {"artifact_count": 1}
+    }
+  ],
+  "terminal_status": {
+    "schema_id": "reasoning.executor.job-status",
+    "schema_version": "1.0.0-alpha.1",
+    "job_id": "job_hybrid_cloud_001",
+    "idempotency_key": "hybrid-submit-000000000001",
+    "spec_digest": "sha256:376cd32cb40ce33c1a07f33564d117765e61ddd5597a8103e9005bfd6c74af3d",
+    "state": "succeeded",
+    "delivery_attempt": 1,
+    "cancellation_requested": false,
+    "last_event_cursor": "opaque:hybrid:005",
+    "created_at": "2026-09-01T18:05:00Z",
+    "updated_at": "2026-09-01T18:05:04Z",
+    "result": {
+      "schema_id": "reasoning.executor.job-result",
+      "schema_version": "1.0.0-alpha.1",
+      "job_id": "job_hybrid_cloud_001",
+      "outcome": "succeeded",
+      "artifacts": [
+        {
+          "schema_id": "reasoning.executor.artifact",
+          "schema_version": "1.0.0-alpha.1",
+          "artifact_id": "artifact_hybrid_result_001",
+          "job_id": "job_hybrid_cloud_001",
+          "name": "result",
+          "kind": "output",
+          "media_type": "application/json",
+          "size_bytes": 19,
+          "digest": "sha256:9349619e4beed54d8895cfa0a69ba13d23437d6c57ccbfaaaadc2b7e2659e850",
+          "created_at": "2026-09-01T18:05:03Z",
+          "provenance_id": "provenance_hybrid_001"
+        }
+      ],
+      "provenance": {
+        "schema_id": "reasoning.executor.provenance",
+        "schema_version": "1.0.0-alpha.1",
+        "provenance_id": "provenance_hybrid_001",
+        "job_id": "job_hybrid_cloud_001",
+        "executor": {
+          "adapter_id": "executor_cloud",
+          "adapter_version": "1.0.0-alpha.1",
+          "target_kind": "aws",
+          "target_id": "target_cloud_research_cpu"
+        },
+        "environment": {
+          "image_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+          "capabilities_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+          "attestation_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+          "runner_version": "1.0.0-alpha.1"
+        },
+        "components": [{"name": "reasoning-noether", "version": "0.1.0"}],
+        "input_digests": ["sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+        "output_digests": ["sha256:9349619e4beed54d8895cfa0a69ba13d23437d6c57ccbfaaaadc2b7e2659e850"],
+        "resource_usage": {
+          "cpu_seconds": 8.5,
+          "peak_memory_bytes": 268435456,
+          "wall_time_seconds": 4.0,
+          "artifact_bytes": 19
+        },
+        "network_policy": {"mode": "denied", "allowed_destinations": []},
+        "started_at": "2026-09-01T18:05:02Z",
+        "finished_at": "2026-09-01T18:05:04Z",
+        "outcome": "succeeded"
+      },
+      "error": null,
+      "completed_at": "2026-09-01T18:05:04Z"
+    }
+  }
+}

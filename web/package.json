@@ -1,0 +1,48 @@
+{
+  "name": "reasoning-workbench",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Benjamin Antieau and Deven Manam",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "test": "node --test tests/*.test.mjs",
+    "test:public-chat": "node --test tests/public-chat.browser.mjs",
+    "test:public-inference": "node --test tests/public-inference.browser.mjs",
+    "test:dev": "node --test tests/development.browser.mjs",
+    "test:public-compute": "node --test tests/public-compute.browser.mjs",
+    "test:topic-agents": "node --test tests/public-topic-agents.browser.mjs",
+    "test:public-workflows": "node --test tests/public-workflows.browser.mjs",
+    "test:public-webhooks": "node --test tests/public-webhooks.browser.mjs",
+    "test:public-desktop": "node --test tests/public-desktop.browser.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "katex": "^0.18.2",
+    "pdfjs-dist": "^6.2.108",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.0",
+    "remark-math": "^6.0.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "overrides": {
+    "katex": "$katex"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.62.0",
+    "typescript": "^5.6.3",
+    "vite": "^8.2.2"
+  }
+}

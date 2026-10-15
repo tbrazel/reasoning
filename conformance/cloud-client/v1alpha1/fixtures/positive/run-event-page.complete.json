@@ -1,0 +1,82 @@
+{
+  "schema_id": "reasoning.cloud-client.run-event-page",
+  "schema_version": "1.0.0-alpha.1",
+  "operation_id": "operation_hybrid_matrix",
+  "after_cursor": null,
+  "events": [
+    {
+      "schema_id": "reasoning.cloud-client.run-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_accepted_001",
+      "operation_id": "operation_hybrid_matrix",
+      "sequence": 1,
+      "cursor": "cursor-first-uninterpreted-value",
+      "type": "run.accepted",
+      "state": "queued",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:03:30Z",
+      "payload": {"request_digest": "sha256:5269fef95155e186e75d67bfd5abb0e5c57765752f1644080470b37ba98c8e5e"}
+    },
+    {
+      "schema_id": "reasoning.cloud-client.run-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_started_001",
+      "operation_id": "operation_hybrid_matrix",
+      "sequence": 2,
+      "cursor": "cursor-second-uninterpreted-value",
+      "type": "run.started",
+      "state": "running",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:04:00Z",
+      "payload": {}
+    },
+    {
+      "schema_id": "reasoning.cloud-client.run-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_artifact_001",
+      "operation_id": "operation_hybrid_matrix",
+      "sequence": 3,
+      "cursor": "cursor-third-uninterpreted-value",
+      "type": "artifact.committed",
+      "state": "running",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:07:30Z",
+      "payload": {
+        "artifact": {
+          "schema_id": "reasoning.executor.artifact",
+          "schema_version": "1.0.0-alpha.1",
+          "artifact_id": "artifact_hybrid_result_001",
+          "job_id": "job_hybrid_001",
+          "name": "result.txt",
+          "kind": "output",
+          "media_type": "text/plain",
+          "size_bytes": 7,
+          "digest": "sha256:5656fafa00d4f294bcb606cf4f7d4fa877390e46f583e8b3c8744ace104a31d1",
+          "created_at": "2026-09-01T18:07:30Z",
+          "provenance_id": "provenance_hybrid_001"
+        }
+      }
+    },
+    {
+      "schema_id": "reasoning.cloud-client.run-event",
+      "schema_version": "1.0.0-alpha.1",
+      "event_id": "event_hybrid_succeeded_001",
+      "operation_id": "operation_hybrid_matrix",
+      "sequence": 4,
+      "cursor": "cursor-terminal-uninterpreted-value",
+      "type": "run.succeeded",
+      "state": "succeeded",
+      "delivery_attempt": 1,
+      "occurred_at": "2026-09-01T18:08:00Z",
+      "payload": {}
+    }
+  ],
+  "next_cursor": "cursor-terminal-uninterpreted-value",
+  "complete": true,
+  "cursor_semantics": {
+    "cursor": "opaque",
+    "after": "exclusive",
+    "delivery": "at_least_once",
+    "deduplicate_by": "event_id"
+  }
+}

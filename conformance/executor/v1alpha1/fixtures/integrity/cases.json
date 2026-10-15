@@ -1,0 +1,28 @@
+{
+  "schema_id": "reasoning.executor.integrity-negative-cases",
+  "schema_version": "1.0.0-alpha.1",
+  "base_path": "../deterministic-fake-local",
+  "cases": [
+    {
+      "id": "capabilities-byte-tamper",
+      "target": "image-capabilities.json",
+      "json_pointer": "/tools/0/version",
+      "replacement": "2",
+      "expected_refusal": "capabilities_digest_mismatch"
+    },
+    {
+      "id": "attestation-binding-tamper",
+      "target": "image-attestation.json",
+      "json_pointer": "/sbom_digest",
+      "replacement": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "expected_refusal": "attestation_digest_mismatch"
+    },
+    {
+      "id": "job-spec-tamper",
+      "target": "fake.job.json",
+      "json_pointer": "/command/argv/2",
+      "replacement": "from pathlib import Path; Path('/outputs/result.json').write_text('{\"answer\":43}\\n')",
+      "expected_refusal": "spec_digest_mismatch"
+    }
+  ]
+}

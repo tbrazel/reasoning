@@ -1,0 +1,6 @@
+# Copyright Benjamin Antieau and Deven Manam. SPDX-License-Identifier: Apache-2.0
+abi <abi/4.0>,
+include <tunables/global>
+/usr/bin/bwrap flags=(unconfined) {
+  userns,
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/common.schema.json",
+  "title": "Reasoning Collaboration Common Definitions",
+  "$defs": {
+    "schemaVersion": {"const": "1.0.0-alpha.1"},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:-]{2,127}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "opaqueCursor": {"type": "string", "minLength": 1, "maxLength": 2048},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "service", "harness"]},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "permission": {
+      "enum": [
+        "organization.read", "organization.manage",
+        "members.read", "members.invite", "members.manage", "roles.manage",
+        "audit.read", "workspace.read", "workspace.write",
+        "chat.read", "chat.write",
+        "workflow.read", "workflow.write", "workflow.run",
+        "compute.use", "compute.contribute", "swarm.run",
+        "deployment.run", "billing.manage"
+      ]
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspace_id", "name", "status", "created_at"],
+      "properties": {
+        "workspace_id": {"$ref": "#/$defs/stableId"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 120},
+        "status": {"enum": ["active", "archived"]},
+        "created_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "organization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "organization_id", "name", "kind", "role_ids", "permissions", "workspaces"
+      ],
+      "properties": {
+        "organization_id": {"$ref": "#/$defs/stableId"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 120},
+        "kind": {"enum": ["personal", "shared"]},
+        "role_ids": {
+          "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"}
+        },
+        "permissions": {
+          "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/permission"}
+        },
+        "workspaces": {
+          "type": "array", "minItems": 1, "maxItems": 256,
+          "items": {"$ref": "#/$defs/workspace"}
+        }
+      }
+    }
+  }
+}

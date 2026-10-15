@@ -1,0 +1,73 @@
+[
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_complete_wins_001",
+    "job_id": "job_fixture_complete_wins_001",
+    "sequence": 1,
+    "cursor": "opaque:complete-wins:001",
+    "type": "job.accepted",
+    "state": "queued",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:00Z",
+    "payload": {"persisted": true}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_complete_wins_002",
+    "job_id": "job_fixture_complete_wins_001",
+    "sequence": 2,
+    "cursor": "opaque:complete-wins:002",
+    "type": "job.provisioning",
+    "state": "provisioning",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:01Z",
+    "payload": {"target_id": "fixture"}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_complete_wins_003",
+    "job_id": "job_fixture_complete_wins_001",
+    "sequence": 3,
+    "cursor": "opaque:complete-wins:003",
+    "type": "job.started",
+    "state": "running",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:02Z",
+    "payload": {"runner_version": "1.0.0-alpha.1"}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_complete_wins_004",
+    "job_id": "job_fixture_complete_wins_001",
+    "sequence": 4,
+    "cursor": "opaque:complete-wins:004",
+    "type": "job.cancellation_requested",
+    "state": "running",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:03Z",
+    "payload": {
+      "request_id": "request_complete_wins_001",
+      "idempotency_key": "complete-wins-00000001",
+      "actor_type": "user",
+      "actor_id": "user_fixture",
+      "persisted": true
+    }
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_complete_wins_005",
+    "job_id": "job_fixture_complete_wins_001",
+    "sequence": 5,
+    "cursor": "opaque:complete-wins:005",
+    "type": "job.succeeded",
+    "state": "succeeded",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:04Z",
+    "payload": {"artifact_count": 0}
+  }
+]

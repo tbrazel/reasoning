@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/executor/v1alpha1/job-result.schema.json",
+  "title": "Reasoning Executor Job Result",
+  "description": "The durable outcome, committed artifacts, and provenance for an execution attempt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "job_id",
+    "outcome",
+    "artifacts",
+    "provenance",
+    "completed_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.executor.job-result"},
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "outcome": {"enum": ["succeeded", "failed", "cancelled", "outcome_unknown"]},
+    "artifacts": {
+      "type": "array",
+      "items": {"$ref": "artifact.schema.json"}
+    },
+    "provenance": {"$ref": "provenance.schema.json"},
+    "error": {
+      "oneOf": [
+        {"$ref": "error.schema.json"},
+        {"type": "null"}
+      ]
+    },
+    "completed_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"outcome": {"const": "failed"}}, "required": ["outcome"]},
+      "then": {"required": ["error"], "properties": {"error": {"$ref": "error.schema.json"}}}
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "succeeded"}}, "required": ["outcome"]},
+      "then": {
+        "properties": {
+          "error": {"type": "null"},
+          "provenance": {"properties": {"outcome": {"const": "succeeded"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "failed"}}, "required": ["outcome"]},
+      "then": {"properties": {"provenance": {"properties": {"outcome": {"const": "failed"}}}}}
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "cancelled"}}, "required": ["outcome"]},
+      "then": {"properties": {"provenance": {"properties": {"outcome": {"const": "cancelled"}}}}}
+    },
+    {
+      "if": {"properties": {"outcome": {"const": "outcome_unknown"}}, "required": ["outcome"]},
+      "then": {"properties": {"provenance": {"properties": {"outcome": {"const": "outcome_unknown"}}}}}
+    }
+  ]
+}

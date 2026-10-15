@@ -1,0 +1,17 @@
+{
+  "schema_id": "reasoning.executor.image-attestation",
+  "schema_version": "1.0.0-alpha.1",
+  "image_digest": "sha256:62983131038d7ade85e02303e2f9c7b698388d5eea85d6dd93633946d7f0199d",
+  "capabilities_digest": "sha256:18c33428a10b4da319739606fd6d83f96a1fec53087ba4d7c18483eafcd66883",
+  "sbom_digest": "sha256:1c530e39fa98b228b99e933d915248677852ddc1144776e815806b724334aadb",
+  "source_revision": "1111111111111111111111111111111111111111",
+  "components": [],
+  "signed_at": "2026-09-01T00:00:00Z",
+  "verification_status": "unverified_fixture",
+  "signature": {
+    "algorithm": "ed25519",
+    "encoding": "base64",
+    "key_id": "ed25519:fixture-key-001",
+    "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}

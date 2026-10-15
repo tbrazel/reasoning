@@ -1,0 +1,73 @@
+[
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_local_001",
+    "job_id": "job_fixture_local_001",
+    "sequence": 1,
+    "cursor": "opaque:local:001",
+    "type": "job.accepted",
+    "state": "queued",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:00Z",
+    "payload": {"persisted": true}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_local_002",
+    "job_id": "job_fixture_local_001",
+    "sequence": 2,
+    "cursor": "opaque:local:002",
+    "type": "job.provisioning",
+    "state": "provisioning",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:01Z",
+    "payload": {"target_id": "fixture"}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_local_003",
+    "job_id": "job_fixture_local_001",
+    "sequence": 3,
+    "cursor": "opaque:local:003",
+    "type": "job.started",
+    "state": "running",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:02Z",
+    "payload": {"runner_version": "1.0.0-alpha.1"}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_local_004",
+    "job_id": "job_fixture_local_001",
+    "sequence": 4,
+    "cursor": "opaque:local:004",
+    "type": "artifact.committed",
+    "state": "running",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:03Z",
+    "payload": {
+      "artifact_id": "artifact_local_result_001",
+      "digest": "sha256:7df4c3a5d2d577e3d08a941a2c77ba83defcee03618320b2e3643854336df3e4",
+      "size_bytes": 14,
+      "media_type": "application/json",
+      "provenance_id": "provenance_local_001"
+    }
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_local_005",
+    "job_id": "job_fixture_local_001",
+    "sequence": 5,
+    "cursor": "opaque:local:005",
+    "type": "job.succeeded",
+    "state": "succeeded",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:04Z",
+    "payload": {"artifact_count": 1}
+  }
+]

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/executor/v1alpha1/job-status.schema.json",
+  "title": "Reasoning Executor Job Status",
+  "description": "The durable control-plane projection returned for a job.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "job_id",
+    "idempotency_key",
+    "spec_digest",
+    "state",
+    "delivery_attempt",
+    "cancellation_requested",
+    "last_event_cursor",
+    "created_at",
+    "updated_at",
+    "result"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.executor.job-status"},
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "idempotency_key": {"type": "string", "minLength": 16, "maxLength": 255},
+    "spec_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "state": {
+      "enum": ["queued", "provisioning", "running", "succeeded", "failed", "cancelled", "outcome_unknown"]
+    },
+    "delivery_attempt": {"type": "integer", "minimum": 0},
+    "cancellation_requested": {"type": "boolean"},
+    "last_event_cursor": {
+      "oneOf": [
+        {"type": "string", "minLength": 1, "maxLength": 2048},
+        {"type": "null"}
+      ]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "result": {
+      "oneOf": [
+        {"$ref": "job-result.schema.json"},
+        {"type": "null"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"enum": ["queued", "provisioning", "running", "outcome_unknown"]}}, "required": ["state"]},
+      "then": {"properties": {"result": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["succeeded", "failed", "cancelled"]}}, "required": ["state"]},
+      "then": {
+        "properties": {
+          "result": {
+            "allOf": [
+              {"$ref": "job-result.schema.json"},
+              {"properties": {"outcome": {"$ref": "#/$defs/terminalState"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "succeeded"}}, "required": ["state"]},
+      "then": {"properties": {"result": {"properties": {"outcome": {"const": "succeeded"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "failed"}}, "required": ["state"]},
+      "then": {"properties": {"result": {"properties": {"outcome": {"const": "failed"}}}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "cancelled"}}, "required": ["state"]},
+      "then": {"properties": {"result": {"properties": {"outcome": {"const": "cancelled"}}}}}
+    }
+  ],
+  "$defs": {
+    "terminalState": {"enum": ["succeeded", "failed", "cancelled"]}
+  }
+}

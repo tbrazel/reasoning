@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/claim-revision.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_id",
+    "revision_id",
+    "parent_revision_id",
+    "kind",
+    "statement_text",
+    "statement_format",
+    "reference_id",
+    "locator",
+    "notes",
+    "author"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+    "revision_id": {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"},
+    "parent_revision_id": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"}
+      ]
+    },
+    "kind": {"enum": ["claim", "definition"]},
+    "statement_text": {"type": "string", "minLength": 1},
+    "statement_format": {"const": "tex-prose-v1"},
+    "reference_id": {
+      "anyOf": [{"type": "null"}, {"type": "string", "pattern": "^ref_[0-9a-f]{24}$"}]
+    },
+    "reference_revision_id": {"type": "string", "pattern": "^refrev_[0-9a-f]{24}$"},
+    "locator": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "notes": {"anyOf": [{"type": "null"}, {"type": "string"}]},
+    "author": {"$ref": "#/$defs/author"}
+  },
+  "$defs": {
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operator", "agent", "session"],
+      "properties": {
+        "operator": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "agent": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "session": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]}
+      }
+    }
+  }
+}

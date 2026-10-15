@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/run-event-page.schema.json",
+  "title": "Reasoning Cloud Client Run Event Page",
+  "description": "A bounded page after an opaque exclusive cursor. Delivery may repeat events and clients deduplicate by event_id.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "operation_id",
+    "after_cursor",
+    "events",
+    "next_cursor",
+    "complete",
+    "cursor_semantics"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-client.run-event-page"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+    "after_cursor": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/opaqueCursor"}]},
+    "events": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {"$ref": "#/$defs/runEvent"}
+    },
+    "next_cursor": {"oneOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/opaqueCursor"}]},
+    "complete": {"type": "boolean"},
+    "cursor_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cursor", "after", "delivery", "deduplicate_by"],
+      "properties": {
+        "cursor": {"const": "opaque"},
+        "after": {"const": "exclusive"},
+        "delivery": {"const": "at_least_once"},
+        "deduplicate_by": {"const": "event_id"}
+      }
+    }
+  },
+  "$defs": {
+    "runEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "schema_version",
+        "event_id",
+        "operation_id",
+        "sequence",
+        "cursor",
+        "type",
+        "state",
+        "delivery_attempt",
+        "occurred_at",
+        "payload"
+      ],
+      "properties": {
+        "schema_id": {"const": "reasoning.cloud-client.run-event"},
+        "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+        "event_id": {"type": "string", "pattern": "^event_[A-Za-z0-9._-]{3,127}$"},
+        "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "cursor": {"$ref": "common.schema.json#/$defs/opaqueCursor"},
+        "type": {
+          "enum": [
+            "run.accepted",
+            "run.started",
+            "artifact.committed",
+            "run.cancellation_requested",
+            "run.succeeded",
+            "run.failed",
+            "run.cancelled",
+            "run.outcome_unknown",
+            "run.reconciled"
+          ]
+        },
+        "state": {"$ref": "common.schema.json#/$defs/operationState"},
+        "delivery_attempt": {"type": "integer", "minimum": 1},
+        "occurred_at": {"type": "string", "format": "date-time"},
+        "payload": {"type": "object"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"type": {"const": "run.accepted"}}, "required": ["type"]},
+          "then": {
+            "properties": {
+              "state": {"const": "queued"},
+              "payload": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["request_digest"],
+                "properties": {"request_digest": {"$ref": "common.schema.json#/$defs/digest"}}
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "run.started"}}, "required": ["type"]},
+          "then": {"properties": {"state": {"const": "running"}, "payload": {"type": "object", "maxProperties": 0}}}
+        },
+        {
+          "if": {"properties": {"type": {"const": "artifact.committed"}}, "required": ["type"]},
+          "then": {
+            "properties": {
+              "state": {"const": "running"},
+              "payload": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["artifact"],
+                "properties": {"artifact": {"$ref": "../../executor/v1alpha1/artifact.schema.json"}}
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"const": "run.cancellation_requested"}}, "required": ["type"]},
+          "then": {
+            "properties": {
+              "state": {"enum": ["queued", "running", "outcome_unknown"]},
+              "payload": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["idempotency_key_digest"],
+                "properties": {"idempotency_key_digest": {"$ref": "common.schema.json#/$defs/digest"}}
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"type": {"enum": ["run.succeeded", "run.failed", "run.cancelled", "run.outcome_unknown", "run.reconciled"]}}, "required": ["type"]},
+          "then": {"properties": {"payload": {"type": "object", "maxProperties": 0}}}
+        },
+        {"if": {"properties": {"type": {"const": "run.succeeded"}}}, "then": {"properties": {"state": {"const": "succeeded"}}}},
+        {"if": {"properties": {"type": {"const": "run.failed"}}}, "then": {"properties": {"state": {"const": "failed"}}}},
+        {"if": {"properties": {"type": {"const": "run.cancelled"}}}, "then": {"properties": {"state": {"const": "cancelled"}}}},
+        {"if": {"properties": {"type": {"const": "run.outcome_unknown"}}}, "then": {"properties": {"state": {"const": "outcome_unknown"}}}},
+        {"if": {"properties": {"type": {"const": "run.reconciled"}}}, "then": {"properties": {"state": {"enum": ["succeeded", "failed", "cancelled"]}}}}
+      ]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/reference-revision.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "reference_id",
+    "revision_id",
+    "parent_revision_id",
+    "author",
+    "title",
+    "year",
+    "arxiv",
+    "url",
+    "doi",
+    "isbn",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "reference_id": {"type": "string", "pattern": "^ref_[0-9a-f]{24}$"},
+    "revision_id": {"type": "string", "pattern": "^refrev_[0-9a-f]{24}$"},
+    "parent_revision_id": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^refrev_[0-9a-f]{24}$"}
+      ]
+    },
+    "author": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "year": {"anyOf": [{"type": "null"}, {"type": "integer"}]},
+    "arxiv": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "url": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "doi": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "isbn": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+    "notes": {"anyOf": [{"type": "null"}, {"type": "string"}]},
+    "file": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]}
+  }
+}

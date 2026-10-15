@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/common.schema.json",
+  "title": "Reasoning Platform Common Definitions",
+  "$defs": {
+    "schemaVersion": {"const": "1.0.0-alpha.1"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9._:-]{2,127}$"
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,6})?$"
+    },
+    "quantity": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,9})?$"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "service", "harness"]},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "location": {"enum": ["local", "hosted"]},
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_id", "actor", "approved_at", "scope"],
+      "properties": {
+        "approval_id": {"type": "string", "pattern": "^approval_[A-Za-z0-9._-]{3,127}$"},
+        "actor": {"$ref": "#/$defs/actor"},
+        "approved_at": {"type": "string", "format": "date-time"},
+        "scope": {"enum": ["project_link", "project_transfer", "compute_connector"]}
+      }
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\u0000).+$"
+    }
+  }
+}

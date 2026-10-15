@@ -1,0 +1,21 @@
+{
+  "schema_id": "reasoning.platform.compute-target",
+  "schema_version": "1.0.0-alpha.1",
+  "target_id": "target_cloud_research_cpu",
+  "display_name": "Cloud research CPU",
+  "location": "hosted",
+  "kind": "remote_sandbox",
+  "isolation": "container",
+  "workspace_access": ["none", "read_only", "read_write"],
+  "network_access": ["denied", "allowlisted"],
+  "supports_processes": true,
+  "durable_workspace": true,
+  "executor": {
+    "adapter_id": "executor_cloud",
+    "adapter_version": "1.0.0-alpha.1",
+    "target_kind": "aws",
+    "contract_version": "1.0.0-alpha.1"
+  },
+  "supported_harness_ids": ["codex", "reasoning-cloud"],
+  "pricing_catalog_id": "catalog_cloud_compute_2026_09_01"
+}

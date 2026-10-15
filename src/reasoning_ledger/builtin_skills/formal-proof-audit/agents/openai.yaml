@@ -1,0 +1,4 @@
+interface:
+  display_name: "Formal Proof Audit"
+  short_description: "Check Lean proofs without overstating them"
+  default_prompt: "Audit this mathematical claim and its Lean formalization, checking the exact source locally when possible."

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha2/route-plan.schema.json",
+  "title": "Reasoning Hybrid Route Plan",
+  "description": "A persisted plan with independent harness, inference-route, compute-target, and persistence selections.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "route_plan_id",
+    "operation_id",
+    "actor",
+    "tenant_id",
+    "persistence",
+    "harness",
+    "inference",
+    "compute",
+    "decision",
+    "pricing_lifecycle_id",
+    "pricing_contract_version"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.route-plan"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "route_plan_id": {"type": "string", "pattern": "^route_plan_[A-Za-z0-9._-]{3,127}$"},
+    "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["location", "project_bundle_id", "project_id", "project_revision_digest"],
+      "properties": {
+        "location": {"$ref": "common.schema.json#/$defs/location"},
+        "project_bundle_id": {"type": "string", "pattern": "^project_bundle_[A-Za-z0-9._-]{3,127}$"},
+        "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "project_revision_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "cloud_project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "transfer_manifest_id": {"type": "string", "pattern": "^transfer_[A-Za-z0-9._-]{3,127}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"location": {"const": "hosted"}}, "required": ["location"]},
+          "then": {"required": ["cloud_project_id"]}
+        }
+      ]
+    },
+    "harness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["harness_id", "descriptor_digest", "location"],
+      "properties": {
+        "harness_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "descriptor_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "location": {"$ref": "common.schema.json#/$defs/location"}
+      }
+    },
+    "inference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route_id", "route_digest", "provider", "model", "reasoning_effort", "location"],
+      "properties": {
+        "route_id": {"type": "string", "pattern": "^route_[A-Za-z0-9._-]{3,127}$"},
+        "route_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "provider": {"$ref": "common.schema.json#/$defs/stableId"},
+        "model": {"type": "string", "minLength": 1, "maxLength": 255},
+        "reasoning_effort": {"enum": ["none", "low", "medium", "high", "xhigh", "max"]},
+        "location": {"$ref": "common.schema.json#/$defs/location"}
+      }
+    },
+    "compute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_id", "target_digest", "location", "executor_contract_version", "image"],
+      "properties": {
+        "target_id": {"type": "string", "pattern": "^target_[A-Za-z0-9._-]{3,127}$"},
+        "target_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "location": {"$ref": "common.schema.json#/$defs/location"},
+        "executor_contract_version": {"const": "1.0.0-alpha.1"},
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "digest", "capabilities_digest", "attestation_digest"],
+          "properties": {
+            "repository": {"type": "string", "minLength": 1, "maxLength": 255},
+            "digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "capabilities_digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "attestation_digest": {"$ref": "common.schema.json#/$defs/digest"}
+          }
+        },
+        "connector_grant_id": {"type": "string", "pattern": "^connector_grant_[A-Za-z0-9._-]{3,127}$"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "decided_at", "compatibility", "policy"],
+      "properties": {
+        "source": {"enum": ["user", "preset", "automatic"]},
+        "decided_at": {"type": "string", "format": "date-time"},
+        "compatibility": {"const": "passed"},
+        "policy": {"enum": ["passed", "user_override"]}
+      }
+    },
+    "pricing_lifecycle_id": {"type": "string", "pattern": "^pricing_[A-Za-z0-9._-]{3,127}$"},
+    "pricing_contract_version": {"const": "1.0.0-alpha.2"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "persistence": {"properties": {"location": {"const": "local"}}, "required": ["location"]}
+        },
+        "anyOf": [
+          {"properties": {"harness": {"properties": {"location": {"const": "hosted"}}, "required": ["location"]}}},
+          {"properties": {"inference": {"properties": {"location": {"const": "hosted"}}, "required": ["location"]}}},
+          {"properties": {"compute": {"properties": {"location": {"const": "hosted"}}, "required": ["location"]}}}
+        ]
+      },
+      "then": {"properties": {"persistence": {"required": ["transfer_manifest_id"]}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "harness": {"properties": {"location": {"const": "local"}}, "required": ["location"]},
+          "compute": {"properties": {"location": {"const": "hosted"}}, "required": ["location"]}
+        }
+      },
+      "then": {"properties": {"compute": {"required": ["connector_grant_id"]}}}
+    }
+  ]
+}

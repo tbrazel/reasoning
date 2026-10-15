@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/capabilities.schema.json",
+  "title": "Reasoning Cloud Client Capability Snapshot",
+  "description": "An account-scoped, credential-free set of exact canonical resource references and supported contract pairs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "snapshot_id",
+    "actor",
+    "tenant_id",
+    "observed_at",
+    "compatibility_digest",
+    "contracts",
+    "route_pricing_pairs",
+    "harnesses",
+    "inference_routes",
+    "compute_targets"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-client.capabilities"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "snapshot_id": {"type": "string", "pattern": "^capability_snapshot_[A-Za-z0-9._-]{3,127}$"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "compatibility_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_bundle",
+        "harness_provider",
+        "inference_route",
+        "compute_target",
+        "local_harness_connector",
+        "executor",
+        "cloud_execution_api",
+        "capability_manifest"
+      ],
+      "properties": {
+        "project_bundle": {"const": "1.0.0-alpha.1"},
+        "harness_provider": {"const": "1.0.0-alpha.1"},
+        "inference_route": {"const": "1.0.0-alpha.1"},
+        "compute_target": {"const": "1.0.0-alpha.1"},
+        "local_harness_connector": {"const": "1.0.0-alpha.1"},
+        "executor": {"const": "1.0.0-alpha.1"},
+        "cloud_execution_api": {"const": "1.0.0-alpha.1"},
+        "capability_manifest": {"const": "1.0.0-alpha.1"}
+      }
+    },
+    "route_pricing_pairs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["route_plan", "pricing"],
+        "properties": {
+          "route_plan": {"enum": ["1.0.0-alpha.1", "1.0.0-alpha.2"]},
+          "pricing": {"enum": ["1.0.0-alpha.1", "1.0.0-alpha.2"]}
+        },
+        "oneOf": [
+          {"properties": {"route_plan": {"const": "1.0.0-alpha.1"}, "pricing": {"const": "1.0.0-alpha.1"}}},
+          {"properties": {"route_plan": {"const": "1.0.0-alpha.2"}, "pricing": {"const": "1.0.0-alpha.2"}}}
+        ]
+      }
+    },
+    "harnesses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/recordReference"},
+          {"properties": {"schema_id": {"const": "reasoning.platform.harness-provider"}, "schema_version": {"const": "1.0.0-alpha.1"}}}
+        ]
+      }
+    },
+    "inference_routes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/recordReference"},
+          {"properties": {"schema_id": {"const": "reasoning.platform.inference-route"}, "schema_version": {"const": "1.0.0-alpha.1"}}}
+        ]
+      }
+    },
+    "compute_targets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/recordReference"},
+          {"properties": {"schema_id": {"const": "reasoning.platform.compute-target"}, "schema_version": {"const": "1.0.0-alpha.1"}}}
+        ]
+      }
+    }
+  }
+}

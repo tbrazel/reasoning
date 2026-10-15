@@ -1,0 +1,244 @@
+{
+  "schema_id": "reasoning.executor.noether-conformance-fixture",
+  "schema_version": "1.0.0-alpha.1",
+  "fixture_id": "noether-v0.3.1-smoke",
+  "status": "characterized",
+  "release": {
+    "distribution": "reasoning-noether",
+    "version": "0.3.1",
+    "tag": "v0.3.1",
+    "commit": "ca8fc50f3d9a902a827fbd558dba138ad7bf0f8f",
+    "tag_object": "d6b19346770112e2527ee730cf7cabd85c506815",
+    "source_archive_sha256": "84ca3d7ceb08d5132f0a45ac1841fb449fa65f5b97b13368f26205e8a73a4100",
+    "source_archive_command": "git archive --format=tar v0.3.1 | sha256sum (no prefix, uncompressed)",
+    "license": "MIT",
+    "predecessor": {
+      "fixture_id": "noether-v0.1.0-smoke",
+      "version": "0.1.0",
+      "commit": "6d8d64309d3a01395d142249505beb001c56b97c",
+      "invariants_retained": ["health_smoke", "parallel_case"]
+    }
+  },
+  "installation": {
+    "interface": "python-library",
+    "cli_available": false,
+    "wheel_build_requires_full_repository": true,
+    "wheel_build": {
+      "working_directory": "full Noether v0.3.1 repository root",
+      "command": ["make", "wheel"],
+      "documented_chain": [
+        "dev-profile maturin develop to regenerate the discovery artifacts (API_REFERENCE_PY.json, ENGINE_SCHEMAS.json, USAGE_INDEX.json)",
+        "isolated maturin release build with auditwheel repair",
+        "scripts/wheel-native-sbom.py --add and scripts/check-wheel.sh audit"
+      ],
+      "post_install_probe": ["python3", "-c", "import noether; noether.capabilities()"]
+    },
+    "rejected_builds": [
+      {
+        "command_prefix": ["maturin", "build"],
+        "reason": "Bare maturin build omits the generated capability-discovery JSON, so noether.capabilities() fails."
+      }
+    ],
+    "removed_since_predecessor": {
+      "python_modules": ["noether.bridges"],
+      "combin_exports": [
+        "EnumerationCoverage",
+        "PosetEnumeration",
+        "PosetEnumerationCheckpoint",
+        "enumerate_posets",
+        "enumerate_simplicial_complexes"
+      ]
+    }
+  },
+  "image_provenance_binding": {
+    "status": "required_at_image_build",
+    "attestation_component_name": "reasoning-noether",
+    "source_tag": "v0.3.1",
+    "source_commit": "ca8fc50f3d9a902a827fbd558dba138ad7bf0f8f",
+    "required_digests": ["wheel_sha256", "capability_manifest_sha256", "sbom_sha256", "oci_image_sha256"]
+  },
+  "health_smoke": {
+    "command": ["python3", "health_smoke.py", "/outputs/noether-health.json"],
+    "construction": {
+      "coefficient_ring": "Q",
+      "variables": ["x", "y"],
+      "term_order": "lex",
+      "generator_coefficients": [[1, 1], [1, -1]]
+    },
+    "resources": {
+      "cpu": 1,
+      "memory_bytes": 268435456,
+      "wall_time_seconds": 10,
+      "artifact_bytes": 1048576
+    },
+    "expected": {
+      "basis_count": 2,
+      "leading_exponents": [[1, 0], [0, 1]],
+      "noether_version": "0.3.1",
+      "sha256": "dbbdda3865b1b4dae69b029d69c993adb47b53b1195b0e2afdb7128065924c9c",
+      "verified": true
+    }
+  },
+  "parallel_case": {
+    "name": "cyclic-5-modular-batch",
+    "construction": {
+      "family": "cyclic-5",
+      "variable_count": 5,
+      "variable_prefix": "x",
+      "term_order": "grevlex",
+      "equation_widths": [1, 2, 3, 4],
+      "product_constant": -1
+    },
+    "algorithm_parallelism": "serial-per-shard",
+    "batch_parallelism": "four-independent-executor-jobs",
+    "shard_command": ["python3", "cyclic5_shard.py", "{prime}", "/outputs/cyclic5-{prime}.json"],
+    "shard_resources": {
+      "cpu": 1,
+      "memory_bytes": 536870912,
+      "wall_time_seconds": 30,
+      "artifact_bytes": 1048576
+    },
+    "maximum_concurrency": 4,
+    "expected_shards": [
+      {
+        "prime": 101,
+        "basis_count": 20,
+        "term_count": 232,
+        "sha256": "2d0644dff58035b763b878c5cca0f80275457cf8f315cfe5484dc620bc6fac48"
+      },
+      {
+        "prime": 103,
+        "basis_count": 20,
+        "term_count": 232,
+        "sha256": "6a384a7ad8b3ab73490e6f40b4393fdd5e149a422a39f674c4417f1b5bcc9517"
+      },
+      {
+        "prime": 107,
+        "basis_count": 20,
+        "term_count": 232,
+        "sha256": "9ff7f9e580d3297a4f06784195643a275c28abd85ef01667a7b1ff18f20f068f"
+      },
+      {
+        "prime": 109,
+        "basis_count": 20,
+        "term_count": 231,
+        "sha256": "4a51b01deac2c66a9e8dcc934fedb600795501c3ecfb7bd796681f2bf6aaf2c9"
+      }
+    ],
+    "shared_ordered_leading_exponents": [
+      [0, 0, 0, 2, 6],
+      [0, 0, 1, 0, 7],
+      [0, 0, 0, 1, 7],
+      [0, 0, 0, 0, 8],
+      [0, 0, 0, 3, 4],
+      [0, 0, 2, 0, 5],
+      [0, 0, 1, 1, 5],
+      [0, 1, 0, 2, 3],
+      [0, 0, 1, 2, 3],
+      [0, 1, 0, 0, 5],
+      [0, 1, 1, 1, 2],
+      [0, 1, 1, 2, 0],
+      [0, 0, 2, 2, 0],
+      [0, 1, 0, 3, 0],
+      [0, 0, 1, 3, 0],
+      [0, 0, 0, 4, 0],
+      [0, 1, 2, 0, 0],
+      [0, 0, 3, 0, 0],
+      [0, 2, 0, 0, 0],
+      [1, 0, 0, 0, 0]
+    ],
+    "leading_exponents_hash_encoding": "UTF-8 JSON with separators [comma, colon], no whitespace or trailing newline",
+    "shared_ordered_leading_exponents_sha256": "e281cfc799942f167255604f4a416bf66c624a92f91eac12598a921bf225919a",
+    "characterization": {
+      "platform": {
+        "os": "linux",
+        "architecture": "x86_64",
+        "build_profile": "release",
+        "artifact": "host-built manylinux_2_38 characterization wheel sha256 2cf2dc771a57dc80fad61ce61609e2e4f1eacf974e2871aca7511752b5789658"
+      },
+      "observed": {
+        "single_shard_wall_seconds": 0.05,
+        "single_shard_peak_rss_bytes": 43515904,
+        "rss_units": "bytes from GNU time maximum resident set size on Linux",
+        "threads": 1
+      },
+      "normative_sla": false,
+      "purpose": "Resource-envelope calibration only"
+    }
+  },
+  "verified_groebner_case": {
+    "name": "semiregular-verified-basis",
+    "construction": {
+      "family": "semiregular",
+      "prime": 65521,
+      "variable_prefix": "x",
+      "term_order": "grevlex",
+      "coefficient_generator": "64-bit LCG, seed 0x4D595DF4D0F33173, multiplier 6364136223846793005, increment 1442695040888963407",
+      "coefficient_map": "state % (prime - 1) + 1",
+      "term_order_of_generation": "quadratic terms x_i*x_j for i <= j, then linear terms, then the constant, per equation"
+    },
+    "verification": "Ideal.verify() re-reduces every critical pair under the v0.3.1 per-pair and cumulative budgets; the semiregular-6 digest is also asserted by Noether's own v0.3.1 unit test, while the semiregular-7 digest is a fixture-owned oracle observed on the characterization wheel and accepted by Ideal.verify()",
+    "algorithm_parallelism": "serial-per-size",
+    "size_command": ["python3", "semiregular_verify.py", "{size}", "/outputs/semiregular-{size}.json"],
+    "size_resources": {
+      "cpu": 1,
+      "memory_bytes": 1073741824,
+      "wall_time_seconds": 120,
+      "artifact_bytes": 1048576
+    },
+    "expected_sizes": [
+      {
+        "size": 6,
+        "basis_count": 39,
+        "term_count": 2028,
+        "ideal_json_bytes": 447289,
+        "sha256": "fd111468ad97a761ecbb57a5d2493bb63d87ca59c154f4be31f844db4977edfb"
+      },
+      {
+        "size": 7,
+        "basis_count": 67,
+        "term_count": 6714,
+        "ideal_json_bytes": 1482973,
+        "sha256": "1247f57d6ef4d4d4c4de74ceb8966da70703a6ff15a29eb7c5c9edd662888081"
+      }
+    ],
+    "predecessor_limitation": "semiregular-7 was refused by Ideal.verify() at a fixed 1,000,000 reduction-step ceiling on v0.2.0 and v0.3.0; v0.3.1 budgets each critical pair separately",
+    "characterization": {
+      "platform": {
+        "os": "linux",
+        "architecture": "x86_64",
+        "build_profile": "release",
+        "artifact": "host-built manylinux_2_38 characterization wheel sha256 2cf2dc771a57dc80fad61ce61609e2e4f1eacf974e2871aca7511752b5789658"
+      },
+      "observed": {
+        "size_6_verify_seconds": 0.9,
+        "size_7_verify_seconds": 10.5,
+        "peak_rss_bytes": 69083136,
+        "rss_units": "bytes from GNU time maximum resident set size on Linux",
+        "threads": 1,
+        "size_8_out_of_envelope": "128 basis elements verify in about 5 minutes on this host; not part of the fixture"
+      },
+      "normative_sla": false,
+      "purpose": "Resource-envelope calibration only"
+    }
+  },
+  "runtime_semantics": {
+    "native_progress_events": false,
+    "native_checkpoints": false,
+    "native_cancellation": false,
+    "native_resume": false,
+    "resource_limit_failure": {
+      "python_type": "ValueError",
+      "predecessor_characterization": {
+        "characterized_generator_count": 129,
+        "message": "native Groebner computation exceeded its basis size limit of 128",
+        "successor_status": "the 129-generator probe no longer reproduces this refusal on v0.3.1: 129 independent generators construct a 129-element basis on the prime-field, extension-field and rational kernels; MAX_BASIS_SIZE = 128 remains in the source on other code paths"
+      },
+      "verification_budget_messages": [
+        "native Groebner computation exceeded its critical-pair verification steps limit of 1000000",
+        "native Groebner computation exceeded its critical-pair verification total steps limit of 64000000"
+      ],
+      "verification_budget_characterized_by": "resource names and message format from the Noether v0.3.1 unit test critical_pair_verification_still_fails_closed_per_pair (which drives both budgets to 1); the limits 1000000 and 64000000 are the constants MAX_REDUCTION_STEPS and MAX_VERIFICATION_STEPS in crates/noether/src/commalg/groebner.rs; not reproduced from Python in this fixture"
+    }
+  }
+}

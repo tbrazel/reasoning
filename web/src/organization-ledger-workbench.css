@@ -1,0 +1,21 @@
+.shared-ledger-panel { min-width: 320px; overflow: auto; }
+.shared-ledger-panel .panel-header { gap: 10px; }
+.shared-ledger-authority { margin-right: auto; color: #9da8dc; font-size: 11px; letter-spacing: .04em; }
+.shared-ledger-toolbar { display: grid; gap: 10px; padding: 18px 18px 8px; }
+.shared-ledger-toolbar input { width: 100%; border: 1px solid #3b4258; border-radius: 10px; padding: 10px 12px; background: #171b28; color: inherit; }
+.shared-ledger-toolbar a { justify-self: start; color: #aebafb; font-size: 12px; }
+.shared-ledger-notice { margin: 6px 18px 18px; color: #929bb3; font-size: 12px; line-height: 1.6; }
+.shared-ledger-error { margin: 12px 18px; color: #e9a8ab; }
+.shared-ledger-entries { display: grid; gap: 8px; padding: 0 12px; }
+.shared-ledger-entry { border: 1px solid #333b50; border-radius: 12px; background: #1b2030; overflow: hidden; }
+.shared-ledger-entry > summary { display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 13px; cursor: pointer; }
+.shared-ledger-entry > summary strong { font-size: 13px; overflow-wrap: anywhere; }
+.shared-ledger-entry > summary small { grid-column: 2; color: #8e98b3; }
+.shared-ledger-state { color: #bec8fb; font-size: 10px; padding: 3px 6px; border-radius: 5px; align-self: start; background: #353d5f; }
+.shared-ledger-state.status-established { background: #214b40; color: #a5dfb8; }
+.shared-ledger-state.status-refuted { background: #59313e; color: #edacb6; }
+.shared-ledger-body { padding: 0 16px 16px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.shared-ledger-body footer { margin-top: 14px; font-size: 10px; color: #8e98b3; }
+.shared-ledger-provenance { margin-top: 10px; color: #8e98b3; font-size: 11px; }
+.shared-ledger-provenance pre { white-space: pre-wrap; }
+.shared-ledger-pages { display: flex; gap: 8px; justify-content: center; padding: 16px; }

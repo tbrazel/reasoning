@@ -1,0 +1,13 @@
+Reasoning
+Copyright 2026 Benjamin Antieau and Deven Manam
+
+First-party source code, documentation, and deployment tooling are licensed
+under the Apache License, Version 2.0. See LICENSE.
+
+Third-party components retain their own copyright and license notices.
+The bundled KaTeX JavaScript uses the MIT license; its notice is included in
+src/reasoning_ledger/assets/KaTeX-LICENSE.txt and web/public/licenses/KaTeX-MIT.txt.
+The bundled IBM Plex fonts use the SIL Open Font License, Version 1.1;
+their license is included in web/public/licenses/IBM-Plex-OFL-1.1.txt.
+Execution images include additional third-party components whose notices and
+source obligations are described by their image recipes and inventories.

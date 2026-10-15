@@ -1,0 +1,37 @@
+.org-mathematics { padding: 1rem; min-width: 0; }
+.org-mathematics > header { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.org-mathematics h3, .org-mathematics h4 { margin: 0 0 .45rem; }
+.org-mathematics p { line-height: 1.6; }
+.org-mathematics form textarea { width:100%; box-sizing:border-box; padding:8px; background:var(--surface); color:var(--foreground); border:1px solid var(--border); border-radius:var(--radius-control); font:inherit; }
+.org-source-statement { margin:12px 0; padding:8px 0; border-top:1px solid var(--border); }
+.org-mathematics > header p, .org-mathematics small { color: var(--muted, #94a3b8); font-size: .78rem; }
+.org-mathematics > input { width: 100%; box-sizing: border-box; margin-bottom: 1rem; }
+.org-mathematics-layout { display: grid; grid-template-columns: minmax(12rem, .85fr) minmax(0, 1.4fr); gap: 1.25rem; }
+.org-mathematics-list { display: flex; flex-direction: column; gap: .5rem; max-height: 65vh; overflow: auto; }
+.org-mathematics-list > button { text-align: left; padding: 1rem; border-radius: var(--radius-control); display: block; background: transparent; }
+.org-mathematics-list > button { flex-shrink: 0; overflow-wrap: anywhere; }
+.org-ledger-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+.org-ledger-workbench { min-width: 0; }
+.org-ledger-workbench .org-ledger-graph { height: min(65vh, 760px); min-height: 280px; }
+.org-ledger-workbench .org-ledger-inspector { max-height: 75vh; overflow: auto; padding: 16px; }
+.org-ledger-workbench .org-ledger-inspector .proof-card { min-width: 0; overflow-wrap: anywhere; }
+.org-mathematics-list > button[aria-current="true"] { border-color: var(--blue); background: var(--accent-dim); }
+.org-mathematics-list > button > p { margin: .55rem 0; }
+.org-math-status { display: inline-block; font-size: .7rem; letter-spacing: .04em; padding: .25rem .5rem; border-radius: var(--radius-pill); color: var(--amber); background: var(--accent-dim); }
+.org-math-status[data-status="established"] { color: var(--teal); }
+.org-math-status[data-status="refuted"] { color: var(--red); }
+.org-mathematics article { min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-card); }
+.org-mathematics article > header { display: flex; justify-content: space-between; align-items: center; }
+.org-mathematics article > section { margin-top: 1.5rem; }
+.org-mathematics details { margin-top: .75rem; }
+.org-math-dependency { display: block; text-align: left; width: 100%; margin: .5rem 0; }
+.org-math-empty { padding: 3rem .5rem; text-align: center; color: var(--muted, #94a3b8); }
+.org-math-empty > span { font-size: 3rem; color: var(--blue); font-style: italic; }
+.org-ledger-tabs { display: flex; gap: .4rem; margin: .5rem 0; }
+.org-ledger-tabs [aria-pressed="true"] { color: var(--teal); }
+.org-ledger-graph { height: min(65vh, 760px); min-height: 280px; position: relative; margin-bottom: .75rem; }
+.org-ledger-graph .graph-scroll { height: 100%; }
+.org-ledger-graph-detail { grid-template-columns: 1fr; }
+.org-mathematics-list[hidden] { display: none; }
+.org-ledger-inspector { max-height: 75vh; overflow: auto; padding: .5rem; }
+@media (max-width: 650px) { .org-mathematics-layout { grid-template-columns: 1fr; } .org-mathematics-list { max-height: 35vh; } .org-mathematics > header { display: block; } }

@@ -1,0 +1,12 @@
+{
+  "architecture": "amd64",
+  "config": {
+    "Env": []
+  },
+  "created": "2026-09-01T00:00:00Z",
+  "os": "linux",
+  "rootfs": {
+    "diff_ids": [],
+    "type": "layers"
+  }
+}

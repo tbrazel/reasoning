@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/runner-lease.schema.json",
+  "title": "Reasoning Contributed Runner Lease",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "organization_id", "workspace_id", "topic_id",
+    "runner_id", "lease_id", "operation_id", "state", "request",
+    "request_digest", "created_at", "expires_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.collaboration.runner-lease"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "organization_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "workspace_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "topic_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "runner_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "lease_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "operation_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "state": {
+      "enum": ["offered", "accepted", "running", "succeeded", "failed", "cancelled", "expired", "outcome_unknown"]
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "harness_id", "model", "reasoning_effort", "prompt",
+        "timeout_seconds", "max_output_tokens", "network_access"
+      ],
+      "properties": {
+        "harness_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+        "model": {"type": "string", "minLength": 1, "maxLength": 160},
+        "reasoning_effort": {"enum": ["none", "low", "medium", "high", "xhigh", "max", "ultra"]},
+        "prompt": {"type": "string", "minLength": 1, "maxLength": 262144},
+        "timeout_seconds": {"type": "integer", "minimum": 30, "maximum": 3600},
+        "max_output_tokens": {"type": "integer", "minimum": 128, "maximum": 131072},
+        "network_access": {"enum": ["denied", "allowlisted", "unrestricted"]}
+      }
+    },
+    "request_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "created_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "expires_at": {"$ref": "common.schema.json#/$defs/timestamp"}
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_id": "reasoning.platform.compatibility",
+  "schema_version": "1.0.0-alpha.1",
+  "family": "reasoning-platform-v1alpha1",
+  "contracts": [
+    {"schema_id": "reasoning.platform.compute-target", "version": "1.0.0-alpha.1", "schema_path": "compute-target.schema.json"},
+    {"schema_id": "reasoning.platform.harness-provider", "version": "1.0.0-alpha.1", "schema_path": "harness-provider.schema.json"},
+    {"schema_id": "reasoning.platform.inference-route", "version": "1.0.0-alpha.1", "schema_path": "inference-route.schema.json"},
+    {"schema_id": "reasoning.platform.local-harness-connector", "version": "1.0.0-alpha.1", "schema_path": "local-harness-connector.schema.json"},
+    {"schema_id": "reasoning.platform.pricing", "version": "1.0.0-alpha.1", "schema_path": "pricing.schema.json"},
+    {"schema_id": "reasoning.platform.project-bundle", "version": "1.0.0-alpha.1", "schema_path": "project-bundle.schema.json"},
+    {"schema_id": "reasoning.platform.route-plan", "version": "1.0.0-alpha.1", "schema_path": "route-plan.schema.json"}
+  ],
+  "dependencies": {
+    "executor": "1.0.0-alpha.1",
+    "cloud_execution_api": "1.0.0-alpha.1",
+    "capability_manifest": "1.0.0-alpha.1"
+  },
+  "rules": {
+    "prerelease_negotiation": "exact_version",
+    "unknown_schema": "reject",
+    "unknown_required_field": "reject",
+    "additive_change": "new_version_and_explicit_consumer_support",
+    "breaking_change": "new_major_version_with_compatibility_window",
+    "legacy_selection_migration": "separate_observed_fields_or_explicit_legacy_unknown_never_infer",
+    "local_project_migration": "remain_local_and_unlinked",
+    "digest_canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+    "digest_encoding": "UTF-8",
+    "digest_algorithm": "SHA-256"
+  }
+}

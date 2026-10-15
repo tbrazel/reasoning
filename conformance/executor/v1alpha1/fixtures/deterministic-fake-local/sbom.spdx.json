@@ -1,0 +1,14 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2026-09-01T00:00:00Z",
+    "creators": [
+      "Organization: Reasoning AI"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://reasoning.example.org/spdx/fixture/1",
+  "name": "reasoning-executor-fixture",
+  "packages": [],
+  "spdxVersion": "SPDX-2.3"
+}

@@ -1,0 +1,31 @@
+{
+  "schema_id": "reasoning.platform.compatibility",
+  "schema_version": "1.0.0-alpha.2",
+  "family": "reasoning-platform-v1alpha2",
+  "contracts": [
+    {"schema_id": "reasoning.platform.pricing", "version": "1.0.0-alpha.2", "schema_path": "pricing.schema.json"},
+    {"schema_id": "reasoning.platform.route-plan", "version": "1.0.0-alpha.2", "schema_path": "route-plan.schema.json"}
+  ],
+  "dependencies": {
+    "platform_compute_target": "1.0.0-alpha.1",
+    "platform_harness_provider": "1.0.0-alpha.1",
+    "platform_inference_route": "1.0.0-alpha.1",
+    "platform_local_harness_connector": "1.0.0-alpha.1",
+    "platform_project_bundle": "1.0.0-alpha.1",
+    "executor": "1.0.0-alpha.1",
+    "cloud_execution_api": "1.0.0-alpha.1",
+    "capability_manifest": "1.0.0-alpha.1"
+  },
+  "rules": {
+    "prerelease_negotiation": "exact_version",
+    "unknown_schema": "reject",
+    "unknown_required_field": "reject",
+    "additive_change": "new_version_and_explicit_consumer_support",
+    "breaking_change": "new_major_version_with_compatibility_window",
+    "alpha_1_pricing_migration": "negotiate_alpha_2_never_reinterpret_alpha_1_dispatch",
+    "pre_dispatch_release_encoding": "empty_dispatches_empty_usage_explicit_phase_and_reason",
+    "digest_canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+    "digest_encoding": "UTF-8",
+    "digest_algorithm": "SHA-256"
+  }
+}

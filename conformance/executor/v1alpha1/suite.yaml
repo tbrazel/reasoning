@@ -1,0 +1,71 @@
+{
+  "schema_id": "reasoning.executor.conformance-suite",
+  "schema_version": "1.0.0-alpha.1",
+  "contract_version": "1.0.0-alpha.1",
+  "required_profiles": ["fake", "local"],
+  "black_box_scenarios": {"path": "scenarios.json", "status": "pending_implementation"},
+  "integrity_gates": {
+    "committed_fixture_digest_binding": "verified_by_offline_contract_tests",
+    "ed25519_cryptographic_verification": "pending_executor_image_gate",
+    "oci_image_provenance_verification": "pending_executor_image_gate"
+  },
+  "fixtures": [
+    {
+      "id": "deterministic-fake-local",
+      "path": "fixtures/deterministic-fake-local",
+      "required": true,
+      "assertions": [
+        "same_contract_shape",
+        "legal_state_transitions",
+        "ordered_unique_events",
+        "artifact_digest_matches",
+        "complete_provenance"
+      ]
+    },
+    {
+      "id": "failure",
+      "path": "fixtures/failure",
+      "required": true,
+      "assertions": ["legal_state_transitions", "structured_error"]
+    },
+    {
+      "id": "cancellation",
+      "path": "fixtures/cancellation",
+      "required": true,
+      "assertions": ["durable_cancellation_request", "legal_state_transitions"]
+    },
+    {
+      "id": "integrity-tamper-negative",
+      "path": "fixtures/integrity",
+      "required": true,
+      "status": "contract_vectors",
+      "cryptographic_verification": "pending_executor_image_gate",
+      "assertions": [
+        "capabilities_digest_mismatch",
+        "attestation_digest_mismatch",
+        "spec_digest_mismatch"
+      ]
+    },
+    {
+      "id": "noether-v0.1.0-smoke",
+      "path": "fixtures/noether-v0.1.0-smoke",
+      "required": false,
+      "status": "characterized",
+      "profile": "research-cpu",
+      "execution_lane": "optional-pinned-image",
+      "assertions": [
+        "pinned_noether_release",
+        "deterministic_health_smoke",
+        "four_independent_serial_shards",
+        "canonical_mathematical_hashes",
+        "shared_leading_exponent_signature"
+      ]
+    }
+  ],
+  "replay": {
+    "cursor_is_opaque": true,
+    "after_is_exclusive": true,
+    "delivery": "at_least_once",
+    "deduplicate_by": "event_id"
+  }
+}

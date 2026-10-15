@@ -1,0 +1,149 @@
+{
+  "schema_id": "reasoning.platform.pricing",
+  "schema_version": "1.0.0-alpha.2",
+  "pricing_lifecycle_id": "pricing_hybrid_001",
+  "operation": {
+    "operation_id": "operation_hybrid_matrix",
+    "kind": "hybrid",
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "idempotency_key": "hybrid-fixture-001",
+    "request_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "route_plan_id": "route_plan_lhh"
+  },
+  "quote": {
+    "quote_id": "quote_hybrid_001",
+    "sequence": 1,
+    "issued_at": "2026-09-01T18:03:00Z",
+    "expires_at": "2026-09-01T18:13:00Z",
+    "currency": "USD",
+    "dimensions": [
+      {
+        "component_id": "price_component_input_tokens",
+        "kind": "inference",
+        "meter": "input_tokens",
+        "maximum_quantity": "100000",
+        "unit_price": "0.000002",
+        "maximum_amount": "0.200000",
+        "basis": "catalog"
+      },
+      {
+        "component_id": "price_component_output_tokens",
+        "kind": "inference",
+        "meter": "output_tokens",
+        "maximum_quantity": "20000",
+        "unit_price": "0.000010",
+        "maximum_amount": "0.200000",
+        "basis": "catalog"
+      },
+      {
+        "component_id": "price_component_vcpu_seconds",
+        "kind": "compute",
+        "meter": "vcpu_seconds",
+        "maximum_quantity": "600",
+        "unit_price": "0.000500",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      },
+      {
+        "component_id": "price_component_memory_seconds",
+        "kind": "compute",
+        "meter": "memory_gib_seconds",
+        "maximum_quantity": "3000",
+        "unit_price": "0.000100",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      }
+    ],
+    "maximum_amount": "1.000000",
+    "assumptions": [
+      "The inference route and compute image remain exactly as selected.",
+      "Unused reservation is released at terminal reconciliation."
+    ],
+    "catalog_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "reservation": {
+    "reservation_id": "reservation_hybrid_001",
+    "sequence": 2,
+    "quote_id": "quote_hybrid_001",
+    "state": "reserved",
+    "reserved_at": "2026-09-01T18:03:30Z",
+    "currency": "USD",
+    "reserved_amount": "1.000000",
+    "funding": "paid_balance",
+    "persisted_with_operation": true
+  },
+  "dispatches": [
+    {
+      "dispatch_id": "dispatch_inference_001",
+      "sequence": 3,
+      "kind": "inference",
+      "reservation_id": "reservation_hybrid_001",
+      "dispatched_at": "2026-09-01T18:04:00Z",
+      "request_id": "inference_hybrid_001"
+    },
+    {
+      "dispatch_id": "dispatch_compute_001",
+      "sequence": 4,
+      "kind": "compute",
+      "reservation_id": "reservation_hybrid_001",
+      "dispatched_at": "2026-09-01T18:04:05Z",
+      "job_id": "job_hybrid_001",
+      "executor_contract_version": "1.0.0-alpha.1"
+    }
+  ],
+  "usage": [
+    {
+      "usage_id": "usage_inference_001",
+      "sequence": 5,
+      "kind": "inference",
+      "source": "provider_reported",
+      "dimensions": [
+        {"meter": "input_tokens", "quantity": "50000"},
+        {"meter": "output_tokens", "quantity": "10000"}
+      ],
+      "amount": "0.200000",
+      "currency": "USD",
+      "provenance": {
+        "route_id": "route_cloud_openrouter",
+        "provider": "provider_openrouter",
+        "model": "openai/gpt-5.6",
+        "request_id": "inference_hybrid_001"
+      }
+    },
+    {
+      "usage_id": "usage_compute_001",
+      "sequence": 6,
+      "kind": "compute",
+      "source": "reasoning_calculated",
+      "dimensions": [
+        {"meter": "vcpu_seconds", "quantity": "300"},
+        {"meter": "memory_gib_seconds", "quantity": "1500"}
+      ],
+      "amount": "0.300000",
+      "currency": "USD",
+      "provenance": {
+        "target_id": "target_cloud_research_cpu",
+        "job_id": "job_hybrid_001",
+        "image_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "capabilities_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "attestation_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "executor_provenance_id": "provenance_hybrid_001"
+      }
+    }
+  ],
+  "settlement": {
+    "settlement_id": "settlement_hybrid_001",
+    "sequence": 7,
+    "state": "settled",
+    "reservation_id": "reservation_hybrid_001",
+    "settled_at": "2026-09-01T18:08:00Z",
+    "currency": "USD",
+    "actual_amount": "0.500000",
+    "released_amount": "0.500000",
+    "usage_digest": "sha256:336a468dbd11527d41930efdbf77450c10353d4ce59649dd78dc5a639da41041",
+    "actual_provenance_complete": true,
+    "atomic": true
+  }
+}

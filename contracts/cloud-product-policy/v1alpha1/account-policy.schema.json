@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-product-policy/v1alpha1/account-policy.schema.json",
+  "title": "Reasoning Cloud Account Product Policy Snapshot",
+  "description": "A closed presentation of one connected account's exact catalogue, availability, limits, data paths, required telemetry, and independently optional uses.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "snapshot_id",
+    "snapshot_revision",
+    "observed_at",
+    "account_id",
+    "actor",
+    "tenant_id",
+    "capability_snapshot",
+    "entitlement",
+    "catalogue",
+    "product_policy",
+    "inference_offers",
+    "compute_offers",
+    "optional_uses",
+    "snapshot_digest"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-product-policy.account-policy"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "snapshot_id": {"type": "string", "pattern": "^policy_snapshot_[A-Za-z0-9._-]{3,127}$"},
+    "snapshot_revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "observed_at": {"type": "string", "format": "date-time", "maxLength": 40},
+    "account_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "capability_snapshot": {
+      "allOf": [
+        {"$ref": "common.schema.json#/$defs/canonicalReference"},
+        {
+          "properties": {
+            "schema_id": {"const": "reasoning.cloud-client.capabilities"},
+            "schema_version": {"const": "1.0.0-alpha.1"},
+            "record_id": {"type": "string", "pattern": "^capability_snapshot_[A-Za-z0-9._-]{3,127}$"}
+          }
+        }
+      ]
+    },
+    "entitlement": {"$ref": "common.schema.json#/$defs/versionedDigest"},
+    "catalogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalogue_id", "catalogue_version", "catalogue_digest", "plan_id", "plan_version", "plan_digest"],
+      "properties": {
+        "catalogue_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "catalogue_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "catalogue_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "plan_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "plan_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "plan_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "product_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "version", "digest", "effective_at", "expires_at", "state"],
+      "properties": {
+        "policy_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "effective_at": {"type": "string", "format": "date-time", "maxLength": 40},
+        "expires_at": {"type": ["string", "null"], "format": "date-time", "maxLength": 40},
+        "state": {"enum": ["effective", "expired", "unavailable"]}
+      }
+    },
+    "inference_offers": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/offer"},
+          {"properties": {"reference": {"properties": {"schema_id": {"const": "reasoning.platform.inference-route"}}}}}
+        ]
+      }
+    },
+    "compute_offers": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/offer"},
+          {"properties": {"reference": {"properties": {"schema_id": {"const": "reasoning.platform.compute-target"}}}}}
+        ]
+      }
+    },
+    "optional_uses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product_analytics", "research_evaluation", "model_training"],
+      "properties": {
+        "product_analytics": {"$ref": "common.schema.json#/$defs/optionalUse"},
+        "research_evaluation": {"$ref": "common.schema.json#/$defs/optionalUse"},
+        "model_training": {"$ref": "common.schema.json#/$defs/optionalUse"}
+      }
+    },
+    "snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"}
+  }
+}

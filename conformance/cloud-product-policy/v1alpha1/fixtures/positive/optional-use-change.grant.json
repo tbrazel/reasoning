@@ -1,0 +1,38 @@
+{
+  "schema_id": "reasoning.cloud-product-policy.optional-use-change",
+  "schema_version": "1.0.0-alpha.1",
+  "account_id": "account_alpha",
+  "actor": {"type": "user", "id": "user_alice"},
+  "tenant_id": "tenant_alpha",
+  "purpose": "product_analytics",
+  "action": "grant",
+  "expected": {
+    "snapshot_id": "policy_snapshot_account_alpha_001",
+    "snapshot_revision": 0,
+    "snapshot_digest": "sha256:c96d1e97e6fd39b9ea6fc4459b02e182710d3ea1c23c6f47e6f84a86426a371f",
+    "capability_snapshot_id": "capability_snapshot_local_001",
+    "capability_snapshot_digest": "sha256:ff10e25396c5960240211fa39abd3e8593b2e93007c3189de64441dee1b28c7d",
+    "entitlement_id": "entitlement_alpha_free",
+    "entitlement_version": "2026-09-01.1",
+    "entitlement_digest": "sha256:8741e5287bf3553f11dcc2658951461d1f88d6abbc448e0788c31c1c7fd7219b",
+    "product_policy_id": "product_policy_alpha",
+    "product_policy_version": "2026-09-01.1",
+    "product_policy_digest": "sha256:2e8ff1da9423922800a23944ef50bf817f4da340c44b5ed39c55eaa8cfeb8df5",
+    "decision_revision": 0,
+    "decision_digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17"
+  },
+  "consent_policy": {
+    "policy_id": "optional_product_analytics",
+    "version": "2026-09-01.1",
+    "digest": "sha256:cbe2d4dbb9ae6f9af09264ed6d6d9e4fa2cdffcf2ed59201e82bd83b54b6558b",
+    "scope": "account",
+    "data_classes": ["performance_metrics", "usage_metadata"],
+    "processors": ["processor_reasoning_cloud"],
+    "retention_seconds": 7776000,
+    "effective_at": "2026-09-01T20:00:00Z",
+    "expires_at": "2026-10-01T20:00:00Z"
+  },
+  "requested_at": "2026-09-01T21:01:00Z",
+  "idempotency_key_digest": "sha256:50b11bd9fc2d328b1e2766fef633723082af3841695502ac5232980ba6cafb0a",
+  "request_digest": "sha256:7ab4ab3c8fd0bbd10134fafdb4434b2ec82adc041cb30fba0977d0d4f209870f"
+}

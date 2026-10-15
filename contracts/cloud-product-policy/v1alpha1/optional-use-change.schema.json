@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-product-policy/v1alpha1/optional-use-change.schema.json",
+  "title": "Reasoning Cloud Optional Use Change",
+  "description": "One exact account-scoped grant or withdrawal guarded by complete product-policy compare-and-swap bindings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "account_id",
+    "actor",
+    "tenant_id",
+    "purpose",
+    "action",
+    "expected",
+    "consent_policy",
+    "requested_at",
+    "idempotency_key_digest",
+    "request_digest"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-product-policy.optional-use-change"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "account_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "purpose": {"enum": ["product_analytics", "research_evaluation", "model_training"]},
+    "action": {"enum": ["grant", "withdraw"]},
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_id",
+        "snapshot_revision",
+        "snapshot_digest",
+        "capability_snapshot_id",
+        "capability_snapshot_digest",
+        "entitlement_id",
+        "entitlement_version",
+        "entitlement_digest",
+        "product_policy_id",
+        "product_policy_version",
+        "product_policy_digest",
+        "decision_revision",
+        "decision_digest"
+      ],
+      "properties": {
+        "snapshot_id": {"type": "string", "pattern": "^policy_snapshot_[A-Za-z0-9._-]{3,127}$"},
+        "snapshot_revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+        "snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "capability_snapshot_id": {"type": "string", "pattern": "^capability_snapshot_[A-Za-z0-9._-]{3,127}$"},
+        "capability_snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "entitlement_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "entitlement_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "entitlement_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "product_policy_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "product_policy_version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+        "product_policy_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "decision_revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+        "decision_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    },
+    "consent_policy": {"$ref": "common.schema.json#/$defs/policyTerms"},
+    "requested_at": {"type": "string", "format": "date-time", "maxLength": 40},
+    "idempotency_key_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "request_digest": {"$ref": "common.schema.json#/$defs/digest"}
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_id": "reasoning.platform.conformance-suite",
+  "schema_version": "1.0.0-alpha.1",
+  "positive": [
+    {"schema": "compute-target.schema.json", "fixture": "fixtures/positive/compute-target.hosted.json"},
+    {"schema": "compute-target.schema.json", "fixture": "fixtures/positive/compute-target.local.json"},
+    {"schema": "harness-provider.schema.json", "fixture": "fixtures/positive/harness-provider.hosted.json"},
+    {"schema": "harness-provider.schema.json", "fixture": "fixtures/positive/harness-provider.local.json"},
+    {"schema": "inference-route.schema.json", "fixture": "fixtures/positive/inference-route.hosted.json"},
+    {"schema": "inference-route.schema.json", "fixture": "fixtures/positive/inference-route.local.json"},
+    {"schema": "local-harness-connector.schema.json", "fixture": "fixtures/positive/local-harness-connector.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.compute-released.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.hybrid-outcome-unknown.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.hybrid-settled.json"},
+    {"schema": "project-bundle.schema.json", "fixture": "fixtures/positive/project-bundle.local-linked.json"},
+    {"schema": "project-bundle.schema.json", "fixture": "fixtures/positive/project-bundle.local-unlinked.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.compute-released.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hhh.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hhl.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hlh.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hll.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hybrid-outcome-unknown.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.lhh.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.lhl.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.llh.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.lll.json"}
+  ],
+  "negative_cases": "fixtures/negative/cases.json",
+  "semantic_assertions": [
+    "all-eight-harness-inference-compute-location-combinations",
+    "local-project-transfer-requires-exact-approved-disclosure-and-route-binding",
+    "route-descriptors-are-byte-digest-bound",
+    "connector-is-approved-audience-bound-expiring-compute-only-one-job",
+    "reserve-precedes-dispatch",
+    "settled-released-and-outcome-unknown-states-are-atomic-and-provenance-bound",
+    "portable-export-excludes-security-material",
+    "bundle-digest-is-deterministic"
+  ]
+}

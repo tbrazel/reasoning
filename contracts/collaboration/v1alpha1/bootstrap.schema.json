@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/bootstrap.schema.json",
+  "title": "Reasoning Collaboration Bootstrap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "account_id", "actor",
+    "default_organization_id", "default_workspace_id", "organizations"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.collaboration.bootstrap"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "account_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "default_organization_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "default_workspace_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "organizations": {
+      "type": "array", "minItems": 1, "maxItems": 64,
+      "items": {"$ref": "common.schema.json#/$defs/organization"}
+    }
+  }
+}

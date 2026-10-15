@@ -1,0 +1,37 @@
+{
+  "name": "reasoning-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Source-built desktop client for a Reasoning organization server",
+  "author": "Benjamin Antieau and Deven Manam",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "main": "src/main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.mjs",
+    "build:icons": "electron scripts/build-icons.mjs",
+    "build:web": "npm --prefix ../web run build",
+    "build:backend": "node scripts/build-backend.mjs",
+    "build:assets": "npm run build:icons",
+    "start:workbench": "REASONING_DESKTOP_MODE=local-workbench electron .",
+    "build:local": "npm run build:assets && electron-builder --dir",
+    "package": "npm run build:local",
+    "package:mac": "npm run build:assets && electron-builder --mac",
+    "package:mac:arm64": "npm run build:assets && electron-builder --mac --arm64",
+    "package:mac:x64": "npm run build:assets && electron-builder --mac --x64",
+    "package:linux": "npm run build:assets && electron-builder --linux",
+    "package:linux:arm64": "npm run build:assets && electron-builder --linux --arm64",
+    "package:linux:x64": "npm run build:assets && electron-builder --linux --x64"
+  },
+  "devDependencies": {
+    "electron": "43.7.6",
+    "electron-builder": "26.15.3"
+  },
+  "overrides": {
+    "@xmldom/xmldom": "0.8.15",
+    "fast-uri": "3.1.8",
+    "js-yaml": "4.3.2"
+  }
+}

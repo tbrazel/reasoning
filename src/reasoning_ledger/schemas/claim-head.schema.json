@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/claim-head.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "claim_id", "current_revision_id", "withdrawn"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+    "current_revision_id": {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"},
+    "withdrawn": {"type": "boolean"}
+  }
+}

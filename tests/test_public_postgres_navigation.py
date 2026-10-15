@@ -1,0 +1,22 @@
+"""Real PostgreSQL navigation parity, opt-in disposable test schemas."""
+
+import pytest
+import test_public_navigation as navigation
+from postgres_fixture import postgres_configuration as postgres_configuration
+from test_public_server import installation as sqlite_installation
+
+
+@pytest.fixture
+def installation(postgres_configuration, tmp_path):
+    return sqlite_installation.__wrapped__(tmp_path)
+
+
+test_topic_rename = navigation.test_topic_rename_keeps_history_and_enforces_channel_management
+test_navigation_receipts = navigation.test_confirmed_navigation_costs_do_not_double_count_calls_or_unknown_reservations
+test_lagging_workflow = navigation.test_lagging_workflow_parent_with_terminal_nodes_does_not_block_channel_deletion
+test_uncertain_execution = navigation.test_unknown_execution_stays_blocking_and_names_exact_action
+test_private_spend = navigation.test_navigation_spend_does_not_expose_private_project
+
+
+def test_real_child_receipt(postgres_configuration, tmp_path):
+    navigation.test_lagging_workflow_checks_real_child_accounting_before_allowing_deletion(tmp_path)

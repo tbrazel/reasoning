@@ -1,0 +1,95 @@
+{
+  "schema_id": "reasoning.executor.black-box-scenarios",
+  "schema_version": "1.0.0-alpha.1",
+  "evidence_status": "declaration_only",
+  "driver_interface": {
+    "transport": "JSON request-response command protocol",
+    "invocation": ["{driver}", "--scenario", "{scenario_id}", "--request", "{request_json}", "--response", "{response_json}"],
+    "required_operations": [
+      "reset_fixture",
+      "submit_job",
+      "dispatch_count",
+      "disconnect_client",
+      "restart_control_plane",
+      "await_job",
+      "list_events_after",
+      "download_artifact",
+      "run_executor_profile",
+      "submit_tampered_binding",
+      "force_outcome_unknown",
+      "reconcile_job",
+      "request_cancellation"
+    ],
+    "response_fields": ["operation", "ok", "job_id", "state", "events", "artifact", "dispatch_count", "error"]
+  },
+  "scenarios": [
+    {
+      "id": "WS-01-idempotent-single-dispatch",
+      "assertion": 1,
+      "status": "pending_implementation",
+      "steps": ["reset_fixture", "submit_job", "submit_job", "dispatch_count"],
+      "expected": "Both identical actor-scoped submissions return one job_id and dispatch_count equals one."
+    },
+    {
+      "id": "WS-02-disconnect-does-not-cancel",
+      "assertion": 2,
+      "status": "pending_implementation",
+      "steps": ["submit_job", "disconnect_client", "await_job"],
+      "expected": "The accepted job continues to a durable state without cancellation caused by disconnect."
+    },
+    {
+      "id": "WS-03-control-plane-restart-durability",
+      "assertion": 3,
+      "status": "pending_implementation",
+      "steps": ["submit_job", "restart_control_plane", "await_job"],
+      "expected": "The accepted job, committed state, and committed events survive restart."
+    },
+    {
+      "id": "WS-04-exclusive-cursor-redelivery-dedup",
+      "assertion": 4,
+      "status": "pending_implementation",
+      "steps": ["submit_job", "await_job", "list_events_after", "list_events_after"],
+      "expected": "Replay is exclusive after the cursor, ordered, at least once, and semantically unique after event_id deduplication."
+    },
+    {
+      "id": "WS-05-artifact-round-trip",
+      "assertion": 5,
+      "status": "pending_implementation",
+      "steps": ["submit_job", "await_job", "download_artifact"],
+      "expected": "Downloaded bytes match committed digest, size, media type, result metadata, and provenance id."
+    },
+    {
+      "id": "WS-06-fake-local-parity",
+      "assertion": 6,
+      "status": "pending_implementation",
+      "steps": ["run_executor_profile", "run_executor_profile"],
+      "expected": "Fake and local profiles accept the same schema and satisfy the same outcome assertions."
+    },
+    {
+      "id": "WS-07-integrity-refusal",
+      "assertion": 7,
+      "status": "pending_implementation",
+      "steps": ["submit_tampered_binding", "await_job"],
+      "expected": "Capability, attestation, image, SBOM, artifact, or spec digest mismatch prevents workload execution and records a durable integrity failure."
+    },
+    {
+      "id": "WS-08-outcome-unknown-reconciliation",
+      "assertion": 8,
+      "status": "pending_implementation",
+      "steps": ["submit_job", "force_outcome_unknown", "reconcile_job"],
+      "expected": "The job remains visible as outcome_unknown and later reaches exactly one immutable terminal state by reconciliation."
+    },
+    {
+      "id": "CR-01-cancellation-wins",
+      "status": "pending_implementation",
+      "steps": ["submit_job", "request_cancellation", "await_job"],
+      "expected": "Cancellation is the first terminal transition; later completion cannot append another terminal event."
+    },
+    {
+      "id": "CR-02-completion-wins",
+      "status": "pending_implementation",
+      "steps": ["submit_job", "request_cancellation", "await_job"],
+      "expected": "Completion is the first terminal transition; later cancellation returns the current terminal job without another terminal event."
+    }
+  ]
+}

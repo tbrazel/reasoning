@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/project-bundle.schema.json",
+  "title": "Reasoning Portable Project Bundle",
+  "description": "A credential-free project export with an explicit local-to-cloud disclosure boundary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "bundle_id",
+    "project",
+    "linkage",
+    "transfer_manifests",
+    "contents",
+    "export"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.project-bundle"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "bundle_id": {"type": "string", "pattern": "^project_bundle_[A-Za-z0-9._-]{3,127}$"},
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_id", "title", "origin", "revision_id", "revision_digest", "created_at"],
+      "properties": {
+        "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 255},
+        "origin": {"enum": ["local", "cloud"]},
+        "revision_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "revision_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "linkage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": {"state": {"const": "unlinked"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "link_id",
+            "tenant_id",
+            "cloud_project_id",
+            "linked_at",
+            "link_policy_digest",
+            "approval",
+            "authorized_data_classes",
+            "retained_output_classes",
+            "future_transfers_revocable"
+          ],
+          "properties": {
+            "state": {"const": "linked"},
+            "link_id": {"type": "string", "pattern": "^project_link_[A-Za-z0-9._-]{3,127}$"},
+            "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+            "cloud_project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+            "linked_at": {"type": "string", "format": "date-time"},
+            "link_policy_digest": {"$ref": "common.schema.json#/$defs/digest"},
+            "approval": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["approval_id", "actor", "approved_at", "scope", "approved_link_policy_digest"],
+              "properties": {
+                "approval_id": {"type": "string", "pattern": "^approval_[A-Za-z0-9._-]{3,127}$"},
+                "actor": {"$ref": "common.schema.json#/$defs/actor"},
+                "approved_at": {"type": "string", "format": "date-time"},
+                "scope": {"const": "project_link"},
+                "approved_link_policy_digest": {"$ref": "common.schema.json#/$defs/digest"}
+              }
+            },
+            "authorized_data_classes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"enum": ["project_files", "prompts", "artifacts", "workflow_records", "ledger_records"]}
+            },
+            "retained_output_classes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"enum": ["outputs", "logs", "operation_metadata", "usage", "provenance"]}
+            },
+            "future_transfers_revocable": {"const": true},
+            "revoked_at": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+          }
+        }
+      ]
+    },
+    "transfer_manifests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/transferManifest"}
+    },
+    "contents": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "digest", "size_bytes", "media_type", "class"],
+        "properties": {
+          "path": {"$ref": "common.schema.json#/$defs/relativePath"},
+          "digest": {"$ref": "common.schema.json#/$defs/digest"},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "media_type": {"type": "string", "minLength": 1, "maxLength": 255},
+          "class": {"enum": ["project_file", "artifact", "workflow_record", "ledger_record", "portable_checkpoint"]}
+        }
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created_at", "created_by", "format", "security_material", "server_policy"],
+      "properties": {
+        "created_at": {"type": "string", "format": "date-time"},
+        "created_by": {"$ref": "common.schema.json#/$defs/actor"},
+        "format": {"const": "reasoning-project-bundle+json"},
+        "security_material": {"const": "excluded"},
+        "server_policy": {"const": "excluded"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"project": {"properties": {"origin": {"const": "local"}}}}},
+      "then": {
+        "properties": {
+          "linkage": {
+            "oneOf": [
+              {"properties": {"state": {"const": "unlinked"}}, "required": ["state"]},
+              {"properties": {"state": {"const": "linked"}}, "required": ["state"]}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"linkage": {"properties": {"state": {"const": "unlinked"}}, "required": ["state"]}}},
+      "then": {
+        "properties": {
+          "transfer_manifests": {
+            "items": {"allOf": [{"$ref": "#/$defs/transferManifest"}, {"properties": {"mode": {"const": "one_step"}}}]}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "transferManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transfer_id",
+        "operation_id",
+        "binding",
+        "mode",
+        "disclosure",
+        "disclosure_digest",
+        "approval",
+        "future_transfers_authorized"
+      ],
+      "properties": {
+        "transfer_id": {"type": "string", "pattern": "^transfer_[A-Za-z0-9._-]{3,127}$"},
+        "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+        "binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["actor", "tenant_id", "project_id", "project_revision_digest"],
+          "properties": {
+            "actor": {"$ref": "common.schema.json#/$defs/actor"},
+            "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+            "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+            "project_revision_digest": {"$ref": "common.schema.json#/$defs/digest"}
+          }
+        },
+        "mode": {"enum": ["one_step", "linked_project"]},
+        "disclosure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inputs", "retained_cloud_data", "omitted_data_classes"],
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["artifact_id", "digest", "size_bytes", "media_type", "purpose"],
+                "properties": {
+                  "artifact_id": {"type": "string", "pattern": "^artifact_[A-Za-z0-9._-]{3,127}$"},
+                  "digest": {"$ref": "common.schema.json#/$defs/digest"},
+                  "size_bytes": {"type": "integer", "minimum": 0},
+                  "media_type": {"type": "string", "minLength": 1, "maxLength": 255},
+                  "purpose": {"enum": ["inference_context", "compute_input", "both"]}
+                }
+              }
+            },
+            "retained_cloud_data": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "retention", "purpose"],
+                "properties": {
+                  "kind": {"enum": ["outputs", "logs", "operation_metadata", "usage", "provenance"]},
+                  "retention": {"enum": ["operation_lifetime", "account_policy", "indefinite_audit"]},
+                  "purpose": {"type": "string", "minLength": 1, "maxLength": 255}
+                }
+              }
+            },
+            "omitted_data_classes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"enum": ["unlisted_project_files", "local_harness_state", "authentication_material", "local_paths"]}
+            }
+          }
+        },
+        "disclosure_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["approval_id", "actor", "approved_at", "scope", "approved_disclosure_digest"],
+          "properties": {
+            "approval_id": {"type": "string", "pattern": "^approval_[A-Za-z0-9._-]{3,127}$"},
+            "actor": {"$ref": "common.schema.json#/$defs/actor"},
+            "approved_at": {"type": "string", "format": "date-time"},
+            "scope": {"const": "project_transfer"},
+            "approved_disclosure_digest": {"$ref": "common.schema.json#/$defs/digest"}
+          }
+        },
+        "future_transfers_authorized": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "one_step"}}, "required": ["mode"]},
+          "then": {"properties": {"future_transfers_authorized": {"const": false}}}
+        }
+      ]
+    }
+  }
+}

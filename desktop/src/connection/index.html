@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connect to Reasoning</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="picker.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="wordmark">R <span>Reasoning</span></p>
+      <h1>Your organization’s server</h1>
+      <p>
+        Connect to an installation run by your organization. Sign in on that
+        server with your Reasoning account.
+      </p>
+      <form>
+        <label for="server">Server URL</label>
+        <input
+          id="server"
+          type="url"
+          placeholder="https://chat.example.org"
+          autocomplete="url"
+          required
+          maxlength="2048"
+          autofocus
+        />
+        <p class="hint">
+          Use HTTPS. HTTP is supported only for localhost development.
+        </p>
+        <p id="error" role="alert"></p>
+        <button type="submit">Connect</button>
+      </form>
+      <p class="privacy">
+        Only the server URL is saved here. Each server has a separate cookie
+        session. Change server with Ctrl/Command+L; forget its session from the
+        Connection menu.
+      </p>
+      <footer>Copyright Benjamin Antieau and Deven Manam · Apache-2.0</footer>
+    </main>
+  </body>
+</html>

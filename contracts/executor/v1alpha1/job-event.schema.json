@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/executor/v1alpha1/job-event.schema.json",
+  "title": "Reasoning Executor Job Event",
+  "description": "An append-only event with a job-local order and opaque replay cursor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "event_id",
+    "job_id",
+    "sequence",
+    "cursor",
+    "type",
+    "state",
+    "delivery_attempt",
+    "occurred_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.executor.job-event"},
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "event_id": {"type": "string", "pattern": "^event_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "cursor": {
+      "type": "string",
+      "description": "Opaque to clients; consumers must not parse or synthesize it.",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "type": {
+      "enum": [
+        "job.accepted",
+        "job.redelivered",
+        "job.provisioning",
+        "job.started",
+        "job.heartbeat",
+        "log.appended",
+        "artifact.committed",
+        "job.cancellation_requested",
+        "job.succeeded",
+        "job.failed",
+        "job.cancelled",
+        "job.outcome_unknown",
+        "job.reconciled"
+      ]
+    },
+    "state": {"$ref": "#/$defs/state"},
+    "delivery_attempt": {"type": "integer", "minimum": 1},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "payload": {"type": "object", "maxProperties": 64}
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"const": "job.accepted"}}}, "then": {"properties": {"state": {"const": "queued"}}}},
+    {"if": {"properties": {"type": {"const": "job.provisioning"}}}, "then": {"properties": {"state": {"const": "provisioning"}}}},
+    {"if": {"properties": {"type": {"const": "job.started"}}}, "then": {"properties": {"state": {"const": "running"}}}},
+    {"if": {"properties": {"type": {"const": "job.succeeded"}}}, "then": {"properties": {"state": {"const": "succeeded"}}}},
+    {"if": {"properties": {"type": {"const": "job.failed"}}}, "then": {"properties": {"state": {"const": "failed"}}}},
+    {"if": {"properties": {"type": {"const": "job.cancelled"}}}, "then": {"properties": {"state": {"const": "cancelled"}}}},
+    {"if": {"properties": {"type": {"const": "job.outcome_unknown"}}}, "then": {"properties": {"state": {"const": "outcome_unknown"}}}},
+    {
+      "if": {"properties": {"type": {"const": "job.reconciled"}}},
+      "then": {"properties": {"state": {"enum": ["succeeded", "failed", "cancelled"]}}}
+    },
+    {
+      "if": {"properties": {"type": {"enum": ["job.heartbeat", "log.appended"]}}},
+      "then": {"properties": {"state": {"enum": ["provisioning", "running"]}}}
+    },
+    {
+      "if": {"properties": {"type": {"const": "job.redelivered"}}},
+      "then": {"properties": {"state": {"enum": ["queued", "provisioning", "running", "outcome_unknown"]}}}
+    },
+    {
+      "if": {"properties": {"type": {"const": "job.cancellation_requested"}}},
+      "then": {
+        "properties": {
+          "state": {"enum": ["queued", "provisioning", "running", "outcome_unknown"]},
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["request_id", "idempotency_key", "actor_type", "actor_id", "persisted"],
+            "properties": {
+              "request_id": {"type": "string", "minLength": 1},
+              "idempotency_key": {"type": "string", "minLength": 16, "maxLength": 255},
+              "actor_type": {"enum": ["user", "service", "harness"]},
+              "actor_id": {"type": "string", "minLength": 1},
+              "persisted": {"const": true}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"type": {"const": "artifact.committed"}}},
+      "then": {
+        "properties": {
+          "state": {"const": "running"},
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["artifact_id", "digest", "size_bytes", "media_type", "provenance_id"],
+            "properties": {
+              "artifact_id": {"type": "string", "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+              "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+              "size_bytes": {"type": "integer", "minimum": 0},
+              "media_type": {"type": "string", "minLength": 1, "maxLength": 255},
+              "provenance_id": {"type": "string", "pattern": "^provenance_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "state": {
+      "enum": ["queued", "provisioning", "running", "succeeded", "failed", "cancelled", "outcome_unknown"]
+    }
+  }
+}

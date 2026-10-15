@@ -1,0 +1,32 @@
+{
+  "schema_id": "reasoning.platform.conformance-suite",
+  "schema_version": "1.0.0-alpha.2",
+  "positive": [
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.compute-expired-pre-dispatch.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.compute-released-post-dispatch.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.hybrid-cancelled-pre-dispatch.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.hybrid-outcome-unknown.json"},
+    {"schema": "pricing.schema.json", "fixture": "fixtures/positive/pricing.hybrid-settled.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.compute-expired-pre-dispatch.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.compute-released-post-dispatch.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hybrid-cancelled-pre-dispatch.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hybrid-outcome-unknown.json"},
+    {"schema": "route-plan.schema.json", "fixture": "fixtures/positive/route-plan.hybrid-settled.json"}
+  ],
+  "negative_cases": "fixtures/negative/cases.json",
+  "chronology_cases": "fixtures/chronology/cases.json",
+  "canonicalization_cases": "fixtures/canonicalization/cases.json",
+  "integrity_cases": "fixtures/integrity/cases.json",
+  "backward_compatibility_fixture": "fixtures/compatibility/alpha1-file-digests.json",
+  "semantic_assertions": [
+    "pricing-and-route-plan-negotiate-alpha-2-together",
+    "pre-dispatch-release-has-empty-dispatches-and-usage",
+    "pre-dispatch-release-has-no-execution-or-actual-provenance-claims",
+    "pre-dispatch-expiry-and-cancellation-reasons-are-chronology-bound",
+    "post-dispatch-release-retains-zero-usage-and-provenance-evidence",
+    "settled-and-outcome-unknown-retain-dispatch-usage-and-provenance-evidence",
+    "alpha-1-files-remain-byte-identical-and-independently-valid",
+    "prerelease-negotiation-is-exact-version",
+    "bundle-digest-is-deterministic"
+  ]
+}

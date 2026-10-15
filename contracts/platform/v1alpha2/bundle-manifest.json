@@ -1,0 +1,99 @@
+{
+  "schema_id": "reasoning.platform.contract-bundle",
+  "schema_version": "1.0.0-alpha.2",
+  "bundle_id": "reasoning-platform-v1alpha2",
+  "canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "encoding": "UTF-8",
+  "hash_algorithm": "SHA-256",
+  "members": [
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/canonicalization/cases.json",
+      "digest": "sha256:7e098784a3dbe329bd19869c5036fa5383ad756c5968eb093966517fb0cd3077"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/chronology/cases.json",
+      "digest": "sha256:b43c1cd55adcfb1359a616b410b23bffaae55e05b60e1a60fc30d90b079fa8a0"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/compatibility/alpha1-file-digests.json",
+      "digest": "sha256:c40c73d66d670d9be300cd0933fd3d3230d0d466888f6e9e4d3de0f658f3cdf2"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/integrity/cases.json",
+      "digest": "sha256:7c97864bd7670c1648b2fa661a023dcf8a455335a9b4d73357d7cd6e112053e9"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/negative/cases.json",
+      "digest": "sha256:bc565df7a7cded37f82b91f5ad8a162205bf50ff7007aad1d527369e59cd95f2"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/pricing.compute-expired-pre-dispatch.json",
+      "digest": "sha256:f3925fb4e79e48188ca3b8fd28e75a329f199ee9f5ef49b552aa6891f145ab3a"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/pricing.compute-released-post-dispatch.json",
+      "digest": "sha256:91748b3e808e6919bd50af1ee28b8687c4faeea2028a259046b30743066fcf70"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/pricing.hybrid-cancelled-pre-dispatch.json",
+      "digest": "sha256:86bedfca7052f48dded9132167fb6e5656c6d481c763dfb2b8af81ce8df9a284"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/pricing.hybrid-outcome-unknown.json",
+      "digest": "sha256:5795ff46f47d65fc68741274ba23959b668c3c4e421393410a638e7f375b610f"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/pricing.hybrid-settled.json",
+      "digest": "sha256:0f606d6b946654410154d225329215a2aa68b1bf71d3d7d9d1c4851c1c11f0b3"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/route-plan.compute-expired-pre-dispatch.json",
+      "digest": "sha256:6e16e7b7740893416def2982c3b64893aa5ed98e7b10e5a7f13fbc0cfc6a04f9"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/route-plan.compute-released-post-dispatch.json",
+      "digest": "sha256:d6bdacb873428b990a76d522fbb11dad4c4a898078eafa9f2e5b29d00a20ebe8"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/route-plan.hybrid-cancelled-pre-dispatch.json",
+      "digest": "sha256:a8e5be97a41d2a261d4d3704d9fbd25871ae05092f80862dc90c73e26d4ba123"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/route-plan.hybrid-outcome-unknown.json",
+      "digest": "sha256:d969c0f1a1f82ad4003e635a5a69ffbab269ccf985bddcf75b082ecb11eb74c8"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/fixtures/positive/route-plan.hybrid-settled.json",
+      "digest": "sha256:3a6828817ccdf9ea1bbc2ae5252cca4928713c76fc5fa30aaf3def2e01e6f1c3"
+    },
+    {
+      "path": "conformance/platform/v1alpha2/suite.json",
+      "digest": "sha256:e7887c6de894be25f972f5c6018717ca8a92e9349e49e04f1d9abfa79ab6a013"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/common.schema.json",
+      "digest": "sha256:3b1833f92d0765d89e57f5d015f2a2110b69646c3caf2933fd7949fe291f42a9"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/compatibility.json",
+      "digest": "sha256:6190a6296a94d4bb4eab69871e5614ac9b798acf4ec6efc2721e2600b007c886"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/compatibility.schema.json",
+      "digest": "sha256:2283fda5d8cf677ae90d92d5669b7c2afe5531adcc36f6346352ff3f6f23a415"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/contract-bundle.schema.json",
+      "digest": "sha256:ba7c9813d7b3cf4635600400796a91053626897d53565a7058054c0928c32652"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/pricing.schema.json",
+      "digest": "sha256:3b9381123f52d200df2e4012086f54561885a2f93fb17ad6251b4f50670e0b12"
+    },
+    {
+      "path": "contracts/platform/v1alpha2/route-plan.schema.json",
+      "digest": "sha256:7277e10927cc150ecb57758ad127709b5d8c5467d76b877ca5ba3bcb6dfec4f5"
+    }
+  ],
+  "bundle_digest": "sha256:f0988632e10c92095b4de66bc89d193b8931b62a67bedbf562e32794a2175daf"
+}

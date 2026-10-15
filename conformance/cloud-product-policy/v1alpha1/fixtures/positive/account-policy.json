@@ -1,0 +1,174 @@
+{
+  "schema_id": "reasoning.cloud-product-policy.account-policy",
+  "schema_version": "1.0.0-alpha.1",
+  "snapshot_id": "policy_snapshot_account_alpha_001",
+  "snapshot_revision": 0,
+  "observed_at": "2026-09-01T21:00:00Z",
+  "account_id": "account_alpha",
+  "actor": {"type": "user", "id": "user_alice"},
+  "tenant_id": "tenant_alpha",
+  "capability_snapshot": {
+    "schema_id": "reasoning.cloud-client.capabilities",
+    "schema_version": "1.0.0-alpha.1",
+    "record_id": "capability_snapshot_local_001",
+    "digest": "sha256:ff10e25396c5960240211fa39abd3e8593b2e93007c3189de64441dee1b28c7d"
+  },
+  "entitlement": {
+    "id": "entitlement_alpha_free",
+    "version": "2026-09-01.1",
+    "digest": "sha256:8741e5287bf3553f11dcc2658951461d1f88d6abbc448e0788c31c1c7fd7219b"
+  },
+  "catalogue": {
+    "catalogue_id": "catalogue_alpha",
+    "catalogue_version": "2026-09-01.1",
+    "catalogue_digest": "sha256:245c71e0676ef657d47b142cc005280c1638ff3751d8444f273717fadb7884e1",
+    "plan_id": "plan_free_alpha",
+    "plan_version": "2026-09-01.1",
+    "plan_digest": "sha256:dc884c73b2cbea371b06037320c663a152efa0252bf4df8b266b916de7699a64"
+  },
+  "product_policy": {
+    "policy_id": "product_policy_alpha",
+    "version": "2026-09-01.1",
+    "digest": "sha256:2e8ff1da9423922800a23944ef50bf817f4da340c44b5ed39c55eaa8cfeb8df5",
+    "effective_at": "2026-09-01T20:00:00Z",
+    "expires_at": "2026-10-01T20:00:00Z",
+    "state": "effective"
+  },
+  "inference_offers": [
+    {
+      "reference": {
+        "schema_id": "reasoning.platform.inference-route",
+        "schema_version": "1.0.0-alpha.1",
+        "record_id": "route_cloud_openrouter",
+        "digest": "sha256:7cce9941428976587bfa02af9dfb285a78a0bd0c3770ad17774922147a8e0b5a"
+      },
+      "availability": "available",
+      "price": {"state": "estimated", "currency": "USD", "lower_bound": "0", "upper_bound": "0.05", "basis": "per accepted inference operation"},
+      "limits": [
+        {"kind": "concurrency", "scope": "account", "maximum": "1", "period_seconds": null, "unit": "operations"},
+        {"kind": "operations", "scope": "account", "maximum": "20", "period_seconds": 86400, "unit": "operations"},
+        {"kind": "spend", "scope": "account", "maximum": "1", "period_seconds": 2592000, "unit": "USD"}
+      ],
+      "data_path": {
+        "state": "verified",
+        "location": "hosted",
+        "region": "us-east-1",
+        "subprocessors": ["processor_openrouter"],
+        "retention_seconds": 2592000,
+        "provider_training": "prohibited"
+      },
+      "required_telemetry": {
+        "state": "configured",
+        "policy_id": "telemetry_required_alpha",
+        "version": "2026-09-01.1",
+        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "purposes": ["billing", "reliability", "service_operation"],
+        "data_classes": ["error_metadata", "performance_metrics", "usage_metadata"],
+        "processors": ["processor_reasoning_cloud"],
+        "region": "us-east-1",
+        "retention_seconds": 2592000,
+        "field_allowlist": ["duration_ms", "model_id", "operation_id", "token_count"]
+      }
+    }
+  ],
+  "compute_offers": [
+    {
+      "reference": {
+        "schema_id": "reasoning.platform.compute-target",
+        "schema_version": "1.0.0-alpha.1",
+        "record_id": "target_cloud_research_cpu",
+        "digest": "sha256:08d7acb1ac2efeff532884e1ea09fd5e324313504af003c582902e7832980cb0"
+      },
+      "availability": "available",
+      "price": {"state": "zero", "currency": "USD", "lower_bound": "0", "upper_bound": "0", "basis": "within finite free-plan limits"},
+      "limits": [
+        {"kind": "concurrency", "scope": "account", "maximum": "1", "period_seconds": null, "unit": "jobs"},
+        {"kind": "operations", "scope": "account", "maximum": "5", "period_seconds": 86400, "unit": "jobs"},
+        {"kind": "spend", "scope": "account", "maximum": "0", "period_seconds": 2592000, "unit": "USD"}
+      ],
+      "data_path": {
+        "state": "verified",
+        "location": "hosted",
+        "region": "us-east-1",
+        "subprocessors": ["processor_reasoning_cloud"],
+        "retention_seconds": 86400,
+        "provider_training": "prohibited"
+      },
+      "required_telemetry": {
+        "state": "configured",
+        "policy_id": "telemetry_required_alpha",
+        "version": "2026-09-01.1",
+        "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "purposes": ["billing", "reliability", "service_operation"],
+        "data_classes": ["error_metadata", "performance_metrics", "usage_metadata"],
+        "processors": ["processor_reasoning_cloud"],
+        "region": "us-east-1",
+        "retention_seconds": 2592000,
+        "field_allowlist": ["duration_ms", "image_id", "operation_id", "resource_seconds"]
+      }
+    }
+  ],
+  "optional_uses": {
+    "product_analytics": {
+      "availability": "available",
+      "policy": {
+        "policy_id": "optional_product_analytics",
+        "version": "2026-09-01.1",
+        "digest": "sha256:cbe2d4dbb9ae6f9af09264ed6d6d9e4fa2cdffcf2ed59201e82bd83b54b6558b",
+        "scope": "account",
+        "data_classes": ["performance_metrics", "usage_metadata"],
+        "processors": ["processor_reasoning_cloud"],
+        "retention_seconds": 7776000,
+        "effective_at": "2026-09-01T20:00:00Z",
+        "expires_at": "2026-10-01T20:00:00Z"
+      },
+      "decision": {"state": "off", "revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null},
+      "decision_history": [
+        {"revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "state": "off", "action": "initialize", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null, "policy": null}
+      ],
+      "prior_data_disposition": "not_applicable",
+      "allowed_action": "grant"
+    },
+    "research_evaluation": {
+      "availability": "available",
+      "policy": {
+        "policy_id": "optional_research_evaluation",
+        "version": "2026-09-01.1",
+        "digest": "sha256:020a88d1fa9be28727513c583bb38701eb35b07864311473eb9329d30d102640",
+        "scope": "account",
+        "data_classes": ["prompt_content", "response_content"],
+        "processors": ["processor_reasoning_cloud"],
+        "retention_seconds": 7776000,
+        "effective_at": "2026-09-01T20:00:00Z",
+        "expires_at": "2026-10-01T20:00:00Z"
+      },
+      "decision": {"state": "off", "revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null},
+      "decision_history": [
+        {"revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "state": "off", "action": "initialize", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null, "policy": null}
+      ],
+      "prior_data_disposition": "not_applicable",
+      "allowed_action": "grant"
+    },
+    "model_training": {
+      "availability": "available",
+      "policy": {
+        "policy_id": "optional_model_training",
+        "version": "2026-09-01.1",
+        "digest": "sha256:8408119adf1c0d75e221611fddc199825bb78b24947528582fd2955c9fa334b0",
+        "scope": "account",
+        "data_classes": ["artifact_content", "project_content", "prompt_content", "response_content"],
+        "processors": ["processor_reasoning_cloud"],
+        "retention_seconds": 7776000,
+        "effective_at": "2026-09-01T20:00:00Z",
+        "expires_at": "2026-10-01T20:00:00Z"
+      },
+      "decision": {"state": "off", "revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null},
+      "decision_history": [
+        {"revision": 0, "digest": "sha256:efe4b69f638d5ef7e195e42ccc5874fe1f27b938fec4b036160e671bf83c1d17", "state": "off", "action": "initialize", "decided_at": "2026-09-01T21:00:00Z", "policy_digest": null, "policy": null}
+      ],
+      "prior_data_disposition": "not_applicable",
+      "allowed_action": "grant"
+    }
+  },
+  "snapshot_digest": "sha256:c96d1e97e6fd39b9ea6fc4459b02e182710d3ea1c23c6f47e6f84a86426a371f"
+}

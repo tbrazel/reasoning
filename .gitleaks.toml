@@ -1,0 +1,201 @@
+# Copyright Benjamin Antieau and Deven Manam. SPDX-License-Identifier: Apache-2.0
+# Exact non-secret mathematical constants and deterministic protocol fixture values.
+# A changed value or another file remains subject to the default scanner.
+title = "Reasoning source audit"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^conformance/cloud\\-client/v1alpha1/fixtures/positive/run\\.succeeded\\.json$"]
+regexes = [
+  "^hybrid\\-fixture\\-001$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^conformance/platform/v1alpha1/fixtures/positive/pricing\\.hybrid\\-settled\\.json$"]
+regexes = [
+  "^hybrid\\-fixture\\-001$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^conformance/platform/v1alpha2/fixtures/positive/pricing\\.hybrid\\-settled\\.json$"]
+regexes = [
+  "^hybrid\\-fixture\\-001$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^src/reasoning_ledger/agents/heisenberg_level25_four_block_ad5_central_key\\.py$"]
+regexes = [
+  "^7a3896a48b8e0c1de959856c7f07740df956d63cc568321f4a2052e28c27f403$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^src/reasoning_ledger/agents/heisenberg_level25_four_block_ad5_orbit\\.py$"]
+regexes = [
+  "^65658d6de29e771312c63d2f2a89a7dd53df97d96b2e521f0fb0fb8b419ce22d$",
+  "^70430e5a35233c5bb6ec2bade5a1511e7e8891045bfc40f2b7956bca008c7e63$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^src/reasoning_ledger/agents/heisenberg_level25_four_block_ad5_orbit_replay\\.py$"]
+regexes = [
+  "^65658d6de29e771312c63d2f2a89a7dd53df97d96b2e521f0fb0fb8b419ce22d$",
+  "^70430e5a35233c5bb6ec2bade5a1511e7e8891045bfc40f2b7956bca008c7e63$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^src/reasoning_ledger/agents/science_evidence\\.py$"]
+regexes = [
+  "^7a3896a48b8e0c1de959856c7f07740df956d63cc568321f4a2052e28c27f403$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_central_key_replay_v1\\.json$"]
+regexes = [
+  "^606a14c8a8c798e4040fddb167f87fd1d69fdb33cc331b8c886a01cd02a23944$",
+  "^8b2ab399ef04efee9e7866aac1b675f14ede7b48163ad217e40750efe514c704$",
+  "^9748168d46f330e8b3bb6134a918da86e9cf107209dbffeb02ec9027d1d2d7d0$",
+  "^cf3cd0ba2035b259b291e169bc2422d0db4bf949ee0297eb6ef40378c5b44d36$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_central_key_v1\\.txt$"]
+regexes = [
+  "^606a14c8a8c798e4040fddb167f87fd1d69fdb33cc331b8c886a01cd02a23944$",
+  "^8b2ab399ef04efee9e7866aac1b675f14ede7b48163ad217e40750efe514c704$",
+  "^9748168d46f330e8b3bb6134a918da86e9cf107209dbffeb02ec9027d1d2d7d0$",
+  "^cf3cd0ba2035b259b291e169bc2422d0db4bf949ee0297eb6ef40378c5b44d36$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_orbit_replay_v1\\.json$"]
+regexes = [
+  "^70430e5a35233c5bb6ec2bade5a1511e7e8891045bfc40f2b7956bca008c7e63$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_orbit_v1\\.txt$"]
+regexes = [
+  "^65658d6de29e771312c63d2f2a89a7dd53df97d96b2e521f0fb0fb8b419ce22d$",
+  "^70430e5a35233c5bb6ec2bade5a1511e7e8891045bfc40f2b7956bca008c7e63$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_sweep_primary_v1\\.txt$"]
+regexes = [
+  "^1b8133abeee6b5cfee4b71715b667665cf04c4ca74627b63772c18395a11eea2$",
+  "^4f339faffcb26417e53cb418c58203994661e84c4f5fabba70a3cfd541cab244$",
+  "^7f0eeda6a8b26c3c69019a7d7aa1de3ce07c603f0a3dec89738deed9026ccf7c$",
+  "^bde0ad05e39460e59aebcd58f7f5022063bd4e725bb3feb2d56a69c66041e057$",
+  "^daed96e5f397c92a59aa06c7ad85893204d8e5295f0714bd070d7bccf72e823d$",
+  "^ecdc7f58c7cf3c7222172bf21cb07357373e7fc74cfd960efa33e1bfc17f4711$",
+  "^f54354982c6bb98053f295aadd568af4d69ddaac3c1c9b6b54b2eafebf7c8281$",
+  "^fbace2e968fa6bc8a3b7b976d6a1112b8e04361960ed1299b84771da2159d9c0$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/fixtures/science/ad5_sweep_sorted_v1\\.txt$"]
+regexes = [
+  "^1b8133abeee6b5cfee4b71715b667665cf04c4ca74627b63772c18395a11eea2$",
+  "^4f339faffcb26417e53cb418c58203994661e84c4f5fabba70a3cfd541cab244$",
+  "^7f0eeda6a8b26c3c69019a7d7aa1de3ce07c603f0a3dec89738deed9026ccf7c$",
+  "^bde0ad05e39460e59aebcd58f7f5022063bd4e725bb3feb2d56a69c66041e057$",
+  "^daed96e5f397c92a59aa06c7ad85893204d8e5295f0714bd070d7bccf72e823d$",
+  "^ecdc7f58c7cf3c7222172bf21cb07357373e7fc74cfd960efa33e1bfc17f4711$",
+  "^f54354982c6bb98053f295aadd568af4d69ddaac3c1c9b6b54b2eafebf7c8281$",
+  "^fbace2e968fa6bc8a3b7b976d6a1112b8e04361960ed1299b84771da2159d9c0$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/test_cloud_client\\.py$"]
+regexes = [
+  "^hybrid\\-fixture\\-001$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/test_cloud_product_policy\\.py$"]
+regexes = [
+  "^0123456789abcdef$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/test_desktop_cloud_runtime\\.py$"]
+regexes = [
+  "^hybrid\\-fixture\\-001$",
+]
+
+[[allowlists]]
+description = "Reviewed non-secret numeric evidence or deterministic protocol fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ["^tests/test_science_diagnostic_evidence\\.py$"]
+regexes = [
+  "^7a3896a48b8e0c1de959856c7f07740df956d63cc568321f4a2052e28c27f403$",
+  "^ad5_coordinate3_central_key$",
+]

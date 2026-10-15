@@ -1,0 +1,359 @@
+{
+  "cases": [
+    {
+      "id": "pre-dispatch-rejects-dispatch",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {
+          "op": "add",
+          "pointer": "/dispatches/0",
+          "value": {
+            "dispatch_id": "dispatch_fabricated",
+            "sequence": 3,
+            "kind": "compute",
+            "reservation_id": "reservation_compute_expired_pre_dispatch",
+            "dispatched_at": "2026-09-01T20:01:00Z",
+            "job_id": "job_fabricated",
+            "executor_contract_version": "1.0.0-alpha.1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pre-dispatch-rejects-usage",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {
+          "op": "add",
+          "pointer": "/usage/0",
+          "value": {
+            "usage_id": "usage_fabricated",
+            "sequence": 4,
+            "kind": "compute",
+            "source": "reasoning_calculated",
+            "dimensions": [{"meter": "vcpu_seconds", "quantity": "0"}],
+            "amount": "0",
+            "currency": "USD",
+            "provenance": {
+              "target_id": "target_local_container",
+              "job_id": "job_fabricated",
+              "image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+              "capabilities_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+              "attestation_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+              "executor_provenance_id": "provenance_fabricated"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pre-dispatch-rejects-usage-digest",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {
+          "op": "add",
+          "pointer": "/settlement/usage_digest",
+          "value": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8eafb77bfe1018a5f8c29c2b"
+        }
+      ]
+    },
+    {
+      "id": "pre-dispatch-rejects-provenance-completeness",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "add", "pointer": "/settlement/actual_provenance_complete", "value": true}
+      ]
+    },
+    {
+      "id": "pre-dispatch-requires-discriminator",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "remove", "pointer": "/settlement/release_phase"}]
+    },
+    {
+      "id": "pre-dispatch-requires-coherent-reason-enum",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/release_reason", "value": "provider_failed"}
+      ]
+    },
+    {
+      "id": "pre-dispatch-has-exact-terminal-sequence",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/settlement/sequence", "value": 4}]
+    },
+    {
+      "id": "post-dispatch-release-requires-dispatch",
+      "base": "positive/pricing.compute-released-post-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/dispatches", "value": []}]
+    },
+    {
+      "id": "post-dispatch-release-requires-usage",
+      "base": "positive/pricing.compute-released-post-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/usage", "value": []}]
+    },
+    {
+      "id": "outcome-unknown-requires-dispatch",
+      "base": "positive/pricing.hybrid-outcome-unknown.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/dispatches", "value": []}]
+    },
+    {
+      "id": "settled-requires-usage",
+      "base": "positive/pricing.hybrid-settled.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "replace", "pointer": "/usage", "value": []}]
+    },
+    {
+      "id": "empty-lifecycle-cannot-claim-post-dispatch",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/release_phase", "value": "post_dispatch"}
+      ]
+    },
+    {
+      "id": "route-plan-requires-pricing-version",
+      "base": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "schema": "route-plan.schema.json",
+      "validation": "schema",
+      "mutations": [{"op": "remove", "pointer": "/pricing_contract_version"}]
+    },
+    {
+      "id": "route-plan-rejects-alpha1-pricing-version",
+      "base": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "schema": "route-plan.schema.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/pricing_contract_version", "value": "1.0.0-alpha.1"}
+      ]
+    },
+    {
+      "id": "expiry-reason-cannot-release-before-expiry",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/released_at", "value": "2026-09-01T20:09:59Z"}
+      ]
+    },
+    {
+      "id": "cancellation-reason-cannot-release-at-expiry",
+      "base": "positive/pricing.hybrid-cancelled-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.hybrid-cancelled-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/released_at", "value": "2026-09-01T21:10:00Z"}
+      ]
+    },
+    {
+      "id": "release-cannot-precede-reservation",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/released_at", "value": "2026-09-01T19:59:59Z"}
+      ]
+    },
+    {
+      "id": "release-must-return-complete-reservation",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/released_amount", "value": "0.500000"}
+      ]
+    },
+    {
+      "id": "release-must-bind-exact-reservation",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "pointer": "/settlement/reservation_id",
+          "value": "reservation_unrelated"
+        }
+      ]
+    },
+    {
+      "id": "reservation-must-bind-exact-quote",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/reservation/quote_id", "value": "quote_unrelated"}
+      ]
+    },
+    {
+      "id": "quote-expiry-must-follow-issuance",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/quote/issued_at", "value": "2026-09-01T20:11:00Z"}
+      ]
+    },
+    {
+      "id": "reservation-must-occur-before-quote-expiry",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/reservation/reserved_at", "value": "2026-09-01T20:11:00Z"}
+      ]
+    },
+    {
+      "id": "pricing-must-bind-route-plan",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "pointer": "/operation/route_plan_id",
+          "value": "route_plan_unrelated"
+        }
+      ]
+    },
+    {
+      "id": "pricing-must-bind-route-operation",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "pointer": "/operation/operation_id",
+          "value": "operation_unrelated"
+        }
+      ]
+    },
+    {
+      "id": "reservation-cannot-exceed-quote-maximum",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/reservation/reserved_amount", "value": "0.700000"},
+        {"op": "replace", "pointer": "/settlement/released_amount", "value": "0.700000"}
+      ]
+    },
+    {
+      "id": "quote-maximum-must-sum-components",
+      "base": "positive/pricing.compute-expired-pre-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-expired-pre-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/quote/maximum_amount", "value": "0.500000"}
+      ]
+    },
+    {
+      "id": "post-dispatch-release-rejects-nonzero-quantity",
+      "base": "positive/pricing.compute-released-post-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-released-post-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/usage/0/dimensions/0/quantity", "value": "1"}
+      ]
+    },
+    {
+      "id": "dispatch-cannot-follow-quote-expiry",
+      "base": "positive/pricing.compute-released-post-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-released-post-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/dispatches/0/dispatched_at", "value": "2026-09-01T19:11:00Z"}
+      ]
+    },
+    {
+      "id": "post-dispatch-terminal-cannot-precede-dispatch",
+      "base": "positive/pricing.compute-released-post-dispatch.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.compute-released-post-dispatch.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/settled_at", "value": "2026-09-01T19:00:59Z"}
+      ]
+    },
+    {
+      "id": "settled-provider-must-match-route",
+      "base": "positive/pricing.hybrid-settled.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.hybrid-settled.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/usage/0/provenance/provider", "value": "provider_unrelated"}
+      ]
+    },
+    {
+      "id": "settled-usage-digest-must-be-canonical",
+      "base": "positive/pricing.hybrid-settled.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.hybrid-settled.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "pointer": "/settlement/usage_digest",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "id": "settled-terminal-cannot-precede-dispatch",
+      "base": "positive/pricing.hybrid-settled.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.hybrid-settled.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/settled_at", "value": "2026-09-01T18:03:59Z"}
+      ]
+    },
+    {
+      "id": "unknown-observation-cannot-precede-dispatch",
+      "base": "positive/pricing.hybrid-outcome-unknown.json",
+      "schema": "pricing.schema.json",
+      "validation": "pricing_semantic",
+      "route_plan": "positive/route-plan.hybrid-outcome-unknown.json",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/observed_at", "value": "2026-09-01T19:10:59Z"}
+      ]
+    }
+  ]
+}

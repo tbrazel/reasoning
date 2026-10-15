@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/compatibility.schema.json",
+  "title": "Reasoning Cloud Client Compatibility Rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "family", "contracts", "dependencies", "route_pricing_pairs", "rules"],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-client.compatibility"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "family": {"const": "reasoning-cloud-client-v1alpha1"},
+    "contracts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_id", "version", "schema_path"],
+        "properties": {
+          "schema_id": {"enum": ["reasoning.cloud-client.session", "reasoning.cloud-client.capabilities", "reasoning.cloud-client.run", "reasoning.cloud-client.run-event-page"]},
+          "version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+          "schema_path": {"enum": ["session.schema.json", "capabilities.schema.json", "run.schema.json", "run-event-page.schema.json"]}
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {"$ref": "common.schema.json#/$defs/dependency"}
+    },
+    "route_pricing_pairs": {
+      "const": [
+        {"route_plan": "1.0.0-alpha.1", "pricing": "1.0.0-alpha.1"},
+        {"route_plan": "1.0.0-alpha.2", "pricing": "1.0.0-alpha.2"}
+      ]
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prerelease_negotiation",
+        "unknown_schema",
+        "unknown_required_field",
+        "additive_change",
+        "breaking_change",
+        "dependency_records",
+        "credentials",
+        "session_scope",
+        "project_connection",
+        "disconnect_effect",
+        "event_replay",
+        "digest_canonicalization",
+        "digest_encoding",
+        "digest_algorithm"
+      ],
+      "properties": {
+        "prerelease_negotiation": {"const": "exact_version"},
+        "unknown_schema": {"const": "reject"},
+        "unknown_required_field": {"const": "reject"},
+        "additive_change": {"const": "new_version_and_explicit_consumer_support"},
+        "breaking_change": {"const": "new_major_version_with_compatibility_window"},
+        "dependency_records": {"const": "reference_exact_canonical_bytes_never_redefine"},
+        "credentials": {"const": "excluded_provider_owned"},
+        "session_scope": {"const": "connected_actor_and_tenant_only"},
+        "project_connection": {"const": "no_link_or_transfer"},
+        "disconnect_effect": {"const": "no_run_cancellation"},
+        "event_replay": {"const": "opaque_exclusive_at_least_once_deduplicate_event_id"},
+        "digest_canonicalization": {"const": "RFC 8785 JSON Canonicalization Scheme"},
+        "digest_encoding": {"const": "UTF-8"},
+        "digest_algorithm": {"const": "SHA-256"}
+      }
+    }
+  }
+}

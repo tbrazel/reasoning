@@ -1,0 +1,21 @@
+{
+  "schema_id": "reasoning.platform.compute-target",
+  "schema_version": "1.0.0-alpha.1",
+  "target_id": "target_local_container",
+  "display_name": "Local guarded container",
+  "location": "local",
+  "kind": "local_sandbox",
+  "isolation": "container",
+  "workspace_access": ["none", "read_only", "read_write"],
+  "network_access": ["denied"],
+  "supports_processes": true,
+  "durable_workspace": true,
+  "executor": {
+    "adapter_id": "executor_local",
+    "adapter_version": "1.0.0-alpha.1",
+    "target_kind": "local",
+    "contract_version": "1.0.0-alpha.1"
+  },
+  "supported_harness_ids": ["codex", "reasoning-cloud"],
+  "pricing_catalog_id": "catalog_local_compute"
+}

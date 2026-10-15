@@ -1,0 +1,25 @@
+{
+  "schema_id": "reasoning.cloud-product-policy.conformance-suite",
+  "schema_version": "1.0.0-alpha.1",
+  "positive": [
+    {"schema": "account-policy.schema.json", "fixture": "fixtures/positive/account-policy.json"},
+    {"schema": "optional-use-change.schema.json", "fixture": "fixtures/positive/optional-use-change.grant.json"}
+  ],
+  "negative_cases": "fixtures/negative/cases.json",
+  "semantic_assertions": [
+    "account-authority-is-separate-from-connected-session-scope",
+    "capability-reference-binds-exact-accepted-t030-jcs-digest",
+    "offers-resolve-exact-advertised-descriptors-on-independent-axes",
+    "price-and-limit-defaults-fail-closed",
+    "hosted-path-and-required-telemetry-must-be-configured",
+    "device-local-path-has-no-subprocessor-or-provider-training",
+    "exactly-three-optional-purposes-start-off-and-change-independently",
+    "decision-head-equals-final-complete-history-entry",
+    "historical-grant-terms-remain-available-for-withdrawal",
+    "exact-replay-precedes-current-state-cas-under-one-store-lock",
+    "fresh-key-stale-cas-conflicts-without-partial-state",
+    "browser-and-desktop-share-one-byte-identical-account-snapshot",
+    "credentials-session-handles-and-private-cloud-records-are-absent",
+    "raw-dependency-and-jcs-bundle-digests-use-distinct-domains"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "schema_id": "reasoning.executor.state-machine",
+  "schema_version": "1.0.0-alpha.1",
+  "initial_state": "queued",
+  "terminal_states": ["succeeded", "failed", "cancelled"],
+  "reconciliation_states": ["outcome_unknown"],
+  "states": [
+    "queued",
+    "provisioning",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "outcome_unknown"
+  ],
+  "transitions": [
+    {"from": "queued", "to": "provisioning", "event": "job.provisioning"},
+    {"from": "queued", "to": "failed", "event": "job.failed"},
+    {"from": "queued", "to": "cancelled", "event": "job.cancelled"},
+    {"from": "provisioning", "to": "running", "event": "job.started"},
+    {"from": "provisioning", "to": "failed", "event": "job.failed"},
+    {"from": "provisioning", "to": "cancelled", "event": "job.cancelled"},
+    {"from": "provisioning", "to": "outcome_unknown", "event": "job.outcome_unknown"},
+    {"from": "running", "to": "succeeded", "event": "job.succeeded"},
+    {"from": "running", "to": "failed", "event": "job.failed"},
+    {"from": "running", "to": "cancelled", "event": "job.cancelled"},
+    {"from": "running", "to": "outcome_unknown", "event": "job.outcome_unknown"},
+    {"from": "outcome_unknown", "to": "succeeded", "event": "job.reconciled"},
+    {"from": "outcome_unknown", "to": "failed", "event": "job.reconciled"},
+    {"from": "outcome_unknown", "to": "cancelled", "event": "job.reconciled"}
+  ],
+  "observations_without_transition": {
+    "job.accepted": ["queued"],
+    "job.redelivered": ["queued", "provisioning", "running", "outcome_unknown"],
+    "job.heartbeat": ["provisioning", "running"],
+    "log.appended": ["provisioning", "running"],
+    "artifact.committed": ["running"],
+    "job.cancellation_requested": ["queued", "provisioning", "running", "outcome_unknown"]
+  },
+  "submission": {
+    "persist_before_acknowledgement": true,
+    "idempotency_scope": ["actor.type", "actor.id", "tenant_id", "project_id", "idempotency_key"],
+    "same_key_same_spec": "return_existing_job",
+    "same_key_different_spec": "reject_conflict",
+    "spec_digest": {
+      "canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+      "encoding": "UTF-8",
+      "hash": "SHA-256",
+      "wire_format": "sha256:<lowercase-hex>"
+    }
+  },
+  "delivery": {
+    "semantics": "at_least_once",
+    "redelivery_must_not_rewind_state": true,
+    "executor_must_deduplicate_job_id": true,
+    "delivery_attempt_increments_on_redelivery": true
+  },
+  "cancellation": {
+    "request_is_durable": true,
+    "request_does_not_claim_completion": true,
+    "completion_requires_job_cancelled_event": true,
+    "request_idempotency_scope": ["actor.type", "actor.id", "tenant_id", "project_id", "idempotency_key"],
+    "request_key_binds": ["job_id"],
+    "same_key_same_job": "return_existing_cancellation_request",
+    "same_key_different_job": "reject_conflict",
+    "retry_semantics": "at_least_once_request_delivery_with_single_durable_intent",
+    "terminal_race": {
+      "rule": "first_terminal_transition_wins",
+      "storage_requirement": "compare_and_set_from_nonterminal_state",
+      "loser_behavior": "return_current_terminal_job_without_appending_a_second_terminal_event"
+    }
+  },
+  "replay": {
+    "cursor_is_opaque": true,
+    "after_is_exclusive": true,
+    "delivery": "at_least_once",
+    "deduplicate_by": "event_id",
+    "event_order": "job_local_total_order",
+    "retain_for_job_retention_lifetime": true
+  },
+  "client_disconnect": {
+    "causes_state_transition": false,
+    "implies_cancellation": false,
+    "reconnect_uses": ["job_id", "last_event_cursor"]
+  },
+  "invariants": [
+    "accepted jobs never disappear",
+    "terminal states are immutable",
+    "state changes and their events are committed consistently",
+    "outcome_unknown is visible until explicitly reconciled",
+    "committed artifacts survive worker loss"
+  ]
+}

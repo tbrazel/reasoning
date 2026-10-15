@@ -1,0 +1,47 @@
+{
+  "schema_id": "reasoning.cloud-client.capabilities",
+  "schema_version": "1.0.0-alpha.1",
+  "snapshot_id": "capability_snapshot_local_001",
+  "actor": {"type": "user", "id": "user_alice"},
+  "tenant_id": "tenant_alpha",
+  "observed_at": "2026-09-01T21:00:00Z",
+  "compatibility_digest": "sha256:42f6897c87fc091fec32e159ce61d118307f985c4fcd4aa01acfdd2517ff7668",
+  "contracts": {
+    "project_bundle": "1.0.0-alpha.1",
+    "harness_provider": "1.0.0-alpha.1",
+    "inference_route": "1.0.0-alpha.1",
+    "compute_target": "1.0.0-alpha.1",
+    "local_harness_connector": "1.0.0-alpha.1",
+    "executor": "1.0.0-alpha.1",
+    "cloud_execution_api": "1.0.0-alpha.1",
+    "capability_manifest": "1.0.0-alpha.1"
+  },
+  "route_pricing_pairs": [
+    {"route_plan": "1.0.0-alpha.1", "pricing": "1.0.0-alpha.1"},
+    {"route_plan": "1.0.0-alpha.2", "pricing": "1.0.0-alpha.2"}
+  ],
+  "harnesses": [
+    {
+      "schema_id": "reasoning.platform.harness-provider",
+      "schema_version": "1.0.0-alpha.1",
+      "record_id": "harness_provider_codex_local",
+      "digest": "sha256:7cc42bd69c85910110b602aa6fa965e0488f93e267ce39cb05a4a4a6fef9e9f6"
+    }
+  ],
+  "inference_routes": [
+    {
+      "schema_id": "reasoning.platform.inference-route",
+      "schema_version": "1.0.0-alpha.1",
+      "record_id": "route_cloud_openrouter",
+      "digest": "sha256:7cce9941428976587bfa02af9dfb285a78a0bd0c3770ad17774922147a8e0b5a"
+    }
+  ],
+  "compute_targets": [
+    {
+      "schema_id": "reasoning.platform.compute-target",
+      "schema_version": "1.0.0-alpha.1",
+      "record_id": "target_cloud_research_cpu",
+      "digest": "sha256:08d7acb1ac2efeff532884e1ea09fd5e324313504af003c582902e7832980cb0"
+    }
+  ]
+}

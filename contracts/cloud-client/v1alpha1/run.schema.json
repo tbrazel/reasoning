@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/run.schema.json",
+  "title": "Reasoning Cloud Client Hybrid Run Snapshot",
+  "description": "A credential-free hybrid operation projection bound to canonical project, route-plan, and pricing records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "operation_id",
+    "actor",
+    "tenant_id",
+    "capability_snapshot_digest",
+    "cloud_project_id",
+    "idempotency_key_digest",
+    "request_digest",
+    "state",
+    "cancellation_requested",
+    "project_binding",
+    "route_plan",
+    "route_plan_digest",
+    "pricing",
+    "pricing_digest",
+    "created_at",
+    "updated_at",
+    "terminal_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.cloud-client.run"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "operation_id": {"type": "string", "pattern": "^operation_[A-Za-z0-9._-]{3,127}$"},
+    "actor": {"$ref": "common.schema.json#/$defs/actor"},
+    "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "capability_snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "cloud_project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+    "idempotency_key_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "request_digest": {
+      "$ref": "common.schema.json#/$defs/digest",
+      "description": "SHA-256 over JCS of the submit-run mutation and exact run content after omitting the four top-level derived digest fields and embedded pricing operation request digest."
+    },
+    "state": {"$ref": "common.schema.json#/$defs/operationState"},
+    "cancellation_requested": {"type": "boolean"},
+    "project_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_bundle_id", "project_id", "project_revision_digest", "bundle_digest"],
+      "properties": {
+        "project_bundle_id": {"type": "string", "pattern": "^project_bundle_[A-Za-z0-9._-]{3,127}$"},
+        "project_id": {"type": "string", "pattern": "^project_[A-Za-z0-9._-]{3,127}$"},
+        "project_revision_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "bundle_digest": {"$ref": "common.schema.json#/$defs/digest"},
+        "transfer_manifest_id": {"type": "string", "pattern": "^transfer_[A-Za-z0-9._-]{3,127}$"}
+      }
+    },
+    "route_plan": {
+      "oneOf": [
+        {"$ref": "../../platform/v1alpha1/route-plan.schema.json"},
+        {"$ref": "../../platform/v1alpha2/route-plan.schema.json"}
+      ]
+    },
+    "route_plan_digest": {"$ref": "common.schema.json#/$defs/digest"},
+    "pricing": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "../../platform/v1alpha1/pricing.schema.json"},
+        {"$ref": "../../platform/v1alpha2/pricing.schema.json"}
+      ]
+    },
+    "pricing_digest": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "common.schema.json#/$defs/digest"}
+      ]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "terminal_at": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"enum": ["queued", "running"]}}, "required": ["state"]},
+      "then": {"properties": {"pricing": {"type": "null"}, "pricing_digest": {"type": "null"}, "terminal_at": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["succeeded", "failed", "cancelled", "outcome_unknown"]}}, "required": ["state"]},
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "route_plan": {"$ref": "../../platform/v1alpha1/route-plan.schema.json"},
+              "pricing": {"$ref": "../../platform/v1alpha1/pricing.schema.json"},
+              "pricing_digest": {"$ref": "common.schema.json#/$defs/digest"},
+              "terminal_at": {"type": "string", "format": "date-time"}
+            }
+          },
+          {
+            "properties": {
+              "route_plan": {"$ref": "../../platform/v1alpha2/route-plan.schema.json"},
+              "pricing": {"$ref": "../../platform/v1alpha2/pricing.schema.json"},
+              "pricing_digest": {"$ref": "common.schema.json#/$defs/digest"},
+              "terminal_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

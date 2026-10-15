@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "platform": "linux/amd64",
+  "frontend": "docker.io/docker/dockerfile:1.7.0@sha256:dbbd5e059e8a07ff7ea6233b213b36aa516b4c53c645f1817a4dd18b83cbea56",
+  "buildx_version": "github.com/docker/buildx v0.32.1 d3bfb3f4e48a67dda56e957a6636f4fab6c5fcb2",
+  "buildkit_version": "v0.26.2",
+  "buildkit_image": "docker.io/moby/buildkit@sha256:de10faf919fc71ba4eb1dd7bd6449566d012b0c9436b1c61bfee21d621b009aa",
+  "base": "docker.io/sagemath/sagemath:10.6@sha256:19995db6194f4a4bab18ce9a88556fd15b9ed5e916b4504fefe618a7796ddbdb",
+  "downloads": {
+    "julia": {
+      "version": "1.10.11",
+      "url": "https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.11-linux-x86_64.tar.gz",
+      "sha256": "fb49c6b174600cd2051e37ba3f7330f8acf06dd00bce609bab6611387fdb37bf"
+    },
+    "lean": {
+      "version": "4.24.0",
+      "url": "https://github.com/leanprover/lean4/releases/download/v4.24.0/lean-4.24.0-linux.zip",
+      "sha256": "8f2ce2aa6de5ede5847a3e9517a930ede3d6954444f44535155da3250ac7f2fc"
+    }
+  },
+  "noether": {
+    "distribution": "tertius-noether",
+    "version": "0.3.1",
+    "commit": "ca8fc50f3d9a902a827fbd558dba138ad7bf0f8f",
+    "source_repository": "https://github.com/tertius-ai/noether",
+    "build_context": "noether-source",
+    "source_archive": {
+      "url": "https://api.github.com/repos/tertius-ai/reasoning/releases/assets/644289473",
+      "sha256": "a97f7cd143401962478b454a5a5bb2c6962f57357e7ef66a1162f1ffc26cef50",
+      "bytes": 3142759,
+      "transport": "github-api"
+    },
+    "rust_image": "docker.io/library/rust:1.94.0-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea9604b297e67f01c5a4f",
+    "rust_version": "1.94.0",
+    "rust_runtime": {
+      "notice_directory": "/usr/share/reasoning/licenses/rust-1.94.0",
+      "compiler_distribution": {
+        "url": "https://static.rust-lang.org/dist/rustc-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+        "sha256": "31a0d3ac9383dfdeb4fce86eeed5ade3230131c635264c0eab7252dbf235f28e",
+        "bytes": 78590076
+      },
+      "source_distribution": {
+        "url": "https://static.rust-lang.org/dist/rustc-1.94.0-src.tar.xz",
+        "sha256": "0b53ae34f5c0c3612cfe1de139f9167a018cd5737bc2205664fd69ba9b25f600",
+        "bytes": 273916448
+      },
+      "notices": {
+        "COPYRIGHT-library.html": "af70aaabed1b73e872f14f9130db37e09f3f4d73a5f7c598b9173697a5d2729f",
+        "LICENSE-MIT": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
+        "LICENSE-APACHE": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff"
+      }
+    },
+    "manylinux_image": "quay.io/pypa/manylinux2014_x86_64@sha256:95440e0e72dd3a81dc8d2cf59a84d57af661456620f5bc821ff92048d0e54ff9",
+    "uv": {
+      "version": "0.11.16",
+      "url": "https://github.com/astral-sh/uv/releases/download/0.11.16/uv-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "74947fe2c03315cf07e82ab3acc703eddef01aba4d5232a98e4c6825ec116131"
+    },
+    "native_sources": {
+      "gmp": {"version": "6.3.0", "url": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz", "sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"},
+      "mpfr": {"version": "4.2.2", "url": "https://www.mpfr.org/mpfr-4.2.2/mpfr-4.2.2.tar.xz", "sha256": "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"},
+      "flint": {"version": "3.6.0", "url": "https://github.com/flintlib/flint/releases/download/v3.6.0/flint-3.6.0.tar.gz", "sha256": "b95e2c7792f5eea4a1c8d2d42c4098434756832e57a094b295eb5dfdc9b4c36b"}
+    }
+  },
+  "versions": {
+    "python": "3.12.5",
+    "sage": "10.6",
+    "gap": "4.14.0",
+    "pari": "2.17.1",
+    "julia": "1.10.11",
+    "lean": "4.24.0",
+    "noether": "0.3.1"
+  },
+  "maximum_resources": {
+    "cpu": 64,
+    "memory_bytes": 274877906944,
+    "disk_bytes": 68719476736,
+    "pids": 4096,
+    "wall_time_seconds": 86400,
+    "artifact_bytes": 1073741824
+  }
+}

@@ -1,0 +1,19 @@
+include REUSE.toml
+include LICENSE NOTICE
+include uv.lock
+include docs/server.md
+include docs/inference.md
+include docs/compute.md
+include docs/deployment.md
+include docs/backup.md
+include docs/bots.md
+include docs/images.md
+include docs/operations.md
+recursive-include images/research-cpu Dockerfile *.json *.py *.txt
+include images/research-cpu/runtime/python3
+include images/research-cpu/runtime/gap
+include images/research-cpu/runtime/gp
+include contracts/executor/v1alpha1/image-capabilities.schema.json
+recursive-include LICENSES *.txt
+recursive-include tests *.py *.json
+recursive-include tests/fixtures/science *.txt

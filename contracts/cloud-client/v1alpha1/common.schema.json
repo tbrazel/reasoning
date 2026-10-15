@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/common.schema.json",
+  "title": "Reasoning Cloud Client Common Definitions",
+  "$defs": {
+    "schemaVersion": {"const": "1.0.0-alpha.1"},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[a-z][A-Za-z0-9._:-]{2,127}$"},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "service", "harness"]},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "opaqueCursor": {
+      "type": "string",
+      "description": "Opaque to clients; consumers must not parse or synthesize it.",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "operationState": {
+      "enum": ["queued", "running", "succeeded", "failed", "cancelled", "outcome_unknown"]
+    },
+    "recordReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "schema_version", "record_id", "digest"],
+      "properties": {
+        "schema_id": {"type": "string", "pattern": "^reasoning\\.[a-z-]+\\.[a-z-]+$"},
+        "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-alpha\\.[0-9]+$"},
+        "record_id": {"$ref": "#/$defs/stableId"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "path", "digest"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+-alpha\\.[0-9]+$"},
+        "path": {"type": "string", "pattern": "^(contracts|conformance)/[A-Za-z0-9._/-]+$"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

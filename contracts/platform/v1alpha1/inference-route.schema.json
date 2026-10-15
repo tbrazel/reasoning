@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha1/inference-route.schema.json",
+  "title": "Reasoning Inference Route",
+  "description": "A credential-free provider/model route kept independent from harness and compute selection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "route_id",
+    "display_name",
+    "provider",
+    "location",
+    "harness_ids",
+    "model_patterns",
+    "model_options",
+    "reasoning_efforts",
+    "pricing_catalog_id",
+    "credential_custody"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.inference-route"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "route_id": {"type": "string", "pattern": "^route_[A-Za-z0-9._-]{3,127}$"},
+    "display_name": {"type": "string", "minLength": 1, "maxLength": 255},
+    "provider": {"$ref": "common.schema.json#/$defs/stableId"},
+    "location": {"$ref": "common.schema.json#/$defs/location"},
+    "harness_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"}
+    },
+    "model_patterns": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 255}
+    },
+    "model_options": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 255}
+    },
+    "reasoning_efforts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["none", "low", "medium", "high", "xhigh", "max"]}
+    },
+    "pricing_catalog_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "credential_custody": {"enum": ["device_local", "service_owned", "harness_owned"]}
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "schema_id": "reasoning.cloud-client.conformance-suite",
+  "schema_version": "1.0.0-alpha.1",
+  "positive": [
+    {"schema": "capabilities.schema.json", "fixture": "fixtures/positive/capabilities.json"},
+    {"schema": "run-event-page.schema.json", "fixture": "fixtures/positive/run-event-page.complete.json"},
+    {"schema": "run.schema.json", "fixture": "fixtures/positive/run.succeeded.json"},
+    {"schema": "session.schema.json", "fixture": "fixtures/positive/session.connected.json"},
+    {"schema": "session.schema.json", "fixture": "fixtures/positive/session.disconnected.json"}
+  ],
+  "negative_cases": "fixtures/negative/cases.json",
+  "semantic_assertions": [
+    "session-binds-exact-capability-snapshot-and-scope",
+    "capabilities-resolve-exact-canonical-descriptor-bytes",
+    "route-plan-and-pricing-negotiate-as-an-exact-pair",
+    "run-binds-actor-tenant-project-operation-route-and-pricing",
+    "run-request-digest-covers-exact-canonical-mutation-content",
+    "active-run-has-no-partial-pricing-and-terminal-run-has-complete-pricing",
+    "connect-does-not-link-or-transfer-a-project",
+    "disconnect-and-restart-do-not-cancel-a-run",
+    "durable-scope-includes-actor-type-actor-id-and-tenant-id",
+    "mutations-are-idempotent-across-lost-responses",
+    "event-cursor-is-opaque-exclusive-and-deduplicated-by-event-id",
+    "event-transition-and-timestamp-continuity-cross-page-boundaries",
+    "artifact-content-validates-before-exposure",
+    "credentials-are-excluded-recursively",
+    "member-dependency-and-bundle-digests-are-deterministic"
+  ]
+}

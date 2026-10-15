@@ -1,0 +1,21 @@
+{
+  "schema_id": "reasoning.cloud-product-policy.negative-cases",
+  "schema_version": "1.0.0-alpha.1",
+  "cases": [
+    {"id": "account-extra-field", "base": "fixtures/positive/account-policy.json", "pointer": "/session_token", "op": "add", "value": "not-a-token"},
+    {"id": "account-wrong-version", "base": "fixtures/positive/account-policy.json", "pointer": "/schema_version", "op": "replace", "value": "1.0.0-alpha.2"},
+    {"id": "account-partial-actor", "base": "fixtures/positive/account-policy.json", "pointer": "/actor/type", "op": "remove"},
+    {"id": "account-combined-offer", "base": "fixtures/positive/account-policy.json", "pointer": "/inference_offers/0/compute_target_id", "op": "add", "value": "target_cloud_research_cpu"},
+    {"id": "account-missing-limit", "base": "fixtures/positive/account-policy.json", "pointer": "/compute_offers/0/limits", "op": "remove"},
+    {"id": "account-unbounded-limit", "base": "fixtures/positive/account-policy.json", "pointer": "/compute_offers/0/limits/0/maximum", "op": "replace", "value": "999999999999999999999999999999999999999999"},
+    {"id": "account-unknown-purpose", "base": "fixtures/positive/account-policy.json", "pointer": "/optional_uses/marketing", "op": "add", "value": {}},
+    {"id": "account-missing-history", "base": "fixtures/positive/account-policy.json", "pointer": "/optional_uses/product_analytics/decision_history", "op": "remove"},
+    {"id": "account-session-material", "base": "fixtures/positive/account-policy.json", "pointer": "/client_class", "op": "add", "value": "desktop"},
+    {"id": "change-extra-field", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/provider", "op": "add", "value": "example"},
+    {"id": "change-partial-actor", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/actor/type", "op": "remove"},
+    {"id": "change-missing-decision-cas", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/expected/decision_digest", "op": "remove"},
+    {"id": "change-missing-capability-cas", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/expected/capability_snapshot_digest", "op": "remove"},
+    {"id": "change-bundled-purpose", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/purpose", "op": "replace", "value": ["product_analytics", "model_training"]},
+    {"id": "change-project-scope", "base": "fixtures/positive/optional-use-change.grant.json", "pointer": "/consent_policy/scope", "op": "replace", "value": "project"}
+  ]
+}

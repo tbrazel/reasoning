@@ -1,0 +1,41 @@
+[
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_failure_001",
+    "job_id": "job_fixture_failure_001",
+    "sequence": 1,
+    "cursor": "opaque:failure:001",
+    "type": "job.accepted",
+    "state": "queued",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:00Z",
+    "payload": {"persisted": true}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_failure_002",
+    "job_id": "job_fixture_failure_001",
+    "sequence": 2,
+    "cursor": "opaque:failure:002",
+    "type": "job.provisioning",
+    "state": "provisioning",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:01Z",
+    "payload": {"target_id": "fixture"}
+  },
+  {
+    "schema_id": "reasoning.executor.job-event",
+    "schema_version": "1.0.0-alpha.1",
+    "event_id": "event_failure_003",
+    "job_id": "job_fixture_failure_001",
+    "sequence": 3,
+    "cursor": "opaque:failure:003",
+    "type": "job.failed",
+    "state": "failed",
+    "delivery_attempt": 1,
+    "occurred_at": "2026-09-01T00:00:02Z",
+    "payload": {"error_code": "IMAGE_INTEGRITY_MISMATCH"}
+  }
+]

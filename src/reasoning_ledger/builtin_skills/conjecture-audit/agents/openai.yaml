@@ -1,0 +1,3 @@
+interface:
+  display_name: "Conjecture Audit"
+  short_description: "Stress-test conjectures reproducibly"

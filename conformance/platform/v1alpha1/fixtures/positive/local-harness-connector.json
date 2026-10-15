@@ -1,0 +1,56 @@
+{
+  "schema_id": "reasoning.platform.local-harness-connector",
+  "schema_version": "1.0.0-alpha.1",
+  "connector_grant_id": "connector_grant_hybrid_001",
+  "issued_at": "2026-09-01T18:04:00Z",
+  "expires_at": "2026-09-01T18:14:00Z",
+  "audience": "https://executor.example.org/v1/jobs",
+  "grant_policy_digest": "sha256:04126688b2db4894e7e97f2283b0165368072ccc09af94c582754334afaf6d34",
+  "binding": {
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "operation_id": "operation_hybrid_matrix",
+    "route_plan_id": "route_plan_lhh",
+    "harness_id": "codex",
+    "target_id": "target_cloud_research_cpu",
+    "max_jobs": 1
+  },
+  "capability_set": {
+    "scope": "reasoning.executor.compute-job-lifecycle",
+    "actions": ["submit", "read", "events", "artifacts", "cancel"],
+    "account_access": false,
+    "billing_access": false,
+    "inference_access": false,
+    "project_export_access": false
+  },
+  "budget": {
+    "kind": "monetary",
+    "currency": "USD",
+    "maximum_amount": "1.000000",
+    "reservation_id": "reservation_hybrid_001"
+  },
+  "approval": {
+    "approval_id": "approval_connector_001",
+    "actor": {"type": "user", "id": "user_alice"},
+    "approved_at": "2026-09-01T18:04:00Z",
+    "scope": "compute_connector",
+    "approved_grant_policy_digest": "sha256:04126688b2db4894e7e97f2283b0165368072ccc09af94c582754334afaf6d34"
+  },
+  "revocation": {
+    "revocation_id": "revocation_connector_001",
+    "supported": true,
+    "revoked_at": null
+  },
+  "replay_protection": {
+    "request_nonce_required": true,
+    "idempotency_key_required": true,
+    "nonce_ttl_seconds": 60
+  },
+  "presentation": {
+    "exchangeable": false,
+    "refreshable": false,
+    "reusable_account_material": false,
+    "inference_material": false
+  }
+}

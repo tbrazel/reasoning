@@ -1,0 +1,58 @@
+{
+  "schema_id": "reasoning.platform.harness-provider",
+  "schema_version": "1.0.0-alpha.1",
+  "descriptor_id": "harness_provider_codex_local",
+  "harness_id": "codex",
+  "display_name": "Codex app-server",
+  "location": "local",
+  "transport": "local_process",
+  "adapter_version": "1",
+  "protocol_version": "1",
+  "event_version": "1",
+  "session": {
+    "modes": ["fresh", "resume"],
+    "durability": "device",
+    "reconnect": {
+      "supported": true,
+      "cursor": "opaque",
+      "after": "exclusive",
+      "delivery": "at_least_once",
+      "deduplicate_by": "event_id"
+    }
+  },
+  "features": {
+    "streaming": true,
+    "tools": true,
+    "skills": true,
+    "structured_output": true,
+    "mcp": true,
+    "approvals": true,
+    "interrupt": true,
+    "steering": true,
+    "checkpoints": false,
+    "subagents": true,
+    "context_compaction": true,
+    "reports_usage": true,
+    "reports_cost": false,
+    "reasoning_visibility": "streamed_summary",
+    "reasoning_efforts": ["none", "low", "medium", "high", "xhigh", "max"]
+  },
+  "access": {
+    "workspace": ["none", "read_only", "read_write"],
+    "network": ["denied", "allowlisted", "unrestricted"],
+    "processes": true
+  },
+  "supported_inference_route_ids": ["route_local_ollama", "route_cloud_openrouter"],
+  "supported_compute_target_ids": ["target_local_container", "target_cloud_research_cpu"],
+  "credential_custody": {
+    "account_material": "device_local",
+    "inference_material": "route_scoped",
+    "reusable_material_exported": false
+  },
+  "limitations": ["Portable handoff excludes provider-private session state."],
+  "conformance": {
+    "suite_version": "1.0.0-alpha.1",
+    "status": "partial",
+    "verified_capabilities": ["fresh", "resume", "streaming", "tools", "approvals", "interrupt", "steering"]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/verification.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "verification_id", "subject", "verdict", "authority", "evidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "verification_id": {"type": "string", "pattern": "^ver_[0-9a-f]{24}$"},
+    "subject": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim_id", "revision_id"],
+          "properties": {
+            "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+            "revision_id": {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim_id", "proof_id", "revision_id"],
+          "properties": {
+            "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+            "proof_id": {"type": "string", "pattern": "^prf_[0-9a-f]{24}$"},
+            "revision_id": {"type": "string", "pattern": "^prfrev_[0-9a-f]{24}$"}
+          }
+        }
+      ]
+    },
+    "verdict": {"enum": ["verified", "flawed", "inconclusive", "refuted", "established"]},
+    "authority": {"enum": ["corpus", "computation", "lean", "review", "operator"]},
+    "evidence": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1}
+      }
+    },
+    "evidence_repair": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": {"type": "string"}}
+      ]
+    },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operator", "agent", "session"],
+      "properties": {
+        "operator": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "agent": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "session": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]}
+      }
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "effort", "review_id"],
+      "properties": {
+        "model": {"type": "string", "minLength": 1},
+        "effort": {"type": "string", "minLength": 1},
+        "review_id": {"type": "string", "pattern": "^rev_[0-9a-f]{12,}$"}
+      }
+    }
+  }
+}

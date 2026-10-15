@@ -1,0 +1,632 @@
+"""Research turns use the shared native loop, exact source memory and priced calls."""
+
+import asyncio
+import json
+
+import httpx
+import pytest
+from test_public_inference import KEY, MODELS, prepare
+from test_public_server import installation as installation
+
+from reasoning_ledger.server.inference_worker import InferenceWorker
+from reasoning_ledger.server.openrouter import OpenRouter, Quote
+from reasoning_ledger.server.research_agent import ResearchAgent
+from reasoning_ledger.server.research_context import MEMORY_FIELDS, ResearchContext
+from reasoning_ledger.server.research_goals import ResearchGoals
+from reasoning_ledger.server.usage_store import UsageStore
+
+
+class ResearchFixture:
+    def __init__(self, mode="tools"):
+        self.mode, self.requests, self.turn = mode, [], 0
+        self.provider = OpenRouter(transport=httpx.MockTransport(self.handle))
+
+    def handle(self, request):
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": MODELS[0],
+                            "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]},
+                            "pricing": {"prompt": "0.000001", "completion": "0.000002"},
+                            "context_length": 200000,
+                            "supported_parameters": ["max_completion_tokens", "tools"],
+                            "top_provider": {"max_completion_tokens": 8192},
+                        }
+                    ]
+                },
+            )
+        assert request.headers["Authorization"] == "Bearer " + KEY
+        body = json.loads(request.content)
+        self.requests.append(body)
+        if self.mode == "credit_first" or (len(self.requests) > 1 and self.mode in {"credit_later", "credit_continuation"}):
+            return httpx.Response(402, json={"error": {"message": KEY, "metadata": {
+                "limit_source": "openrouter_credits", "reason": "weight_exceeds_budget", "remedy_hint": KEY,
+            }}})
+        generation = "gen-fixture-" + str(len(self.requests))
+        compacting = "Compact mathematical research" in body["messages"][0]["content"]
+        if compacting:
+            sources = json.loads(body["messages"][-1]["content"])
+            memory = {field: [] for field in MEMORY_FIELDS}
+            memory["definitions"] = [
+                {"text": "V is a vector space over Q; its dimension is not established.", "sources": [sources["source_messages"][0]["id"]]}
+            ]
+            content = json.dumps(memory) if self.mode != "bad_compaction" else "unsupported ungrounded summary"
+            delta, finish = {"content": content}, "stop"
+        elif self.turn == 0 and self.mode in {"tools", "uncertain", "goal", "credit_later", "invalid_arguments", "gemini_nullable"}:
+            self.turn += 1
+            name = "goal_checkpoint" if self.mode == "goal" else "topic_history"
+            arguments = (
+                {"summary": "The supplied acceptance criterion is met by the cited argument.", "status": "complete"}
+                if name == "goal_checkpoint"
+                else {}
+            )
+            delta = {
+                "tool_calls": [
+                    {
+                        "index": 0,
+                        "id": "call-exact-source",
+                        "type": "function",
+                        "function": {"name": name, "arguments": "{" + KEY if self.mode == "invalid_arguments" else json.dumps(arguments)},
+                    }
+                ]
+            }
+            finish = "tool_calls"
+        else:
+            if self.mode == "uncertain":
+                return httpx.Response(503, json={"error": {"message": KEY}})
+            delta, finish = {"content": "The argument proves the stated result; no missing hypothesis is supplied."}, "stop"
+            if self.mode == "invalid_unicode":
+                delta = {"content": "Invalid scalar: \ud800"}
+            elif self.mode == "empty":
+                delta = {}
+            elif self.mode == "reasoning_only" and len(self.requests) <= 2:
+                delta = {"reasoning_details": [{"type": "reasoning.text", "text": "Fixture reasoning", "index": 0}]}
+                finish = "length"
+            elif self.mode == "summary":
+                delta["reasoning_details"] = [{"type": "reasoning.summary", "text": "Checking the hypotheses.", "index": 0},
+                    {"type": "reasoning.text", "text": "Opaque fixture reasoning", "index": 1}]
+            elif self.mode == "unexpected_tool":
+                delta = {"tool_calls": [{"index": 0, "id": "call-not-granted", "type": "function", "function": {
+                    "name": "ledger_claim", "arguments": json.dumps({"statement": "Not authorized by a gamma step"})}}]}
+                finish = "tool_calls"
+            elif self.mode in {"long", "limit", "credit_continuation"}:
+                delta = {"content": f"Segment {len(self.requests)}. "}
+                finish = "length" if self.mode != "long" or len(self.requests) < 6 else "stop"
+
+        def event(value):
+            return "data: " + json.dumps(value) + "\n\n"
+
+        if self.mode in {"gemini_nullable", "gemini_bad"}:
+            delta["reasoning_details"] = [{"type": "reasoning.text", "text": "Fixture thought", "id": None,
+                "format": "google-gemini-v1", "index": 0, "signature": None if self.mode == "gemini_nullable" else {"secret": KEY}}]
+        wire = event({"id": generation, "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]})
+        wire += event({"id": generation, "choices": [], "usage": {"cost": "0.000008", "prompt_tokens": 20, "completion_tokens": 10}})
+        wire += "data: [DONE]\n\n"
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=wire)
+
+
+def turn(installation, fixture, maximum=256):
+    _, state, _, owner, topics = prepare(installation)
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    parameters = state.parameters([MODELS[0]], maximum, 50, None)
+    state.enqueue(owner["user_id"], owner["organization_id"], topics[1]["id"], "research-test", parameters, [quote])
+    claimed = state.claim()
+    ResearchAgent(state, fixture.provider, claimed, quote).execute()
+    return state, owner, topics, claimed
+
+
+@pytest.mark.parametrize("native_status", ["failed", "completed"])
+def test_final_admission_revocation_is_cancelled_even_without_another_native_callback(installation, monkeypatch, native_status):
+    from reasoning_ledger.agents.contracts import AgentRunResult
+
+    config, _, _, owner = installation
+
+    def refused(executor, prepared, emit, *, cancelled):
+        from reasoning_ledger.server.store import Store
+
+        Store(config.data_dir).set_policy(owner["user_id"], owner["organization_id"], MODELS, 0)
+        return AgentRunResult(prepared.run_id, native_status, output_text="Not authorized for publication", error="admission refused")
+
+    monkeypatch.setattr("reasoning_ledger.server.research_agent.ReasoningNativeExecutor.execute", refused)
+    fixture = ResearchFixture()
+    state, owner, _, row = turn(installation, fixture)
+    run = state.run(owner["user_id"], owner["organization_id"], row["id"])
+    assert run["status"] == "cancelled" and run["error_code"] == "model_policy_changed"
+    assert not fixture.requests
+
+
+def test_beta_tool_loop_records_each_call_and_returns_exact_sources(installation):
+    fixture = ResearchFixture()
+    state, owner, topics, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "succeeded" and result["actual_microusd"] == 16
+    assert len(fixture.requests) == 2
+    assert all(request["usage"] == {"include": True} for request in fixture.requests)
+    tools = [message for message in fixture.requests[1]["messages"] if message["role"] == "tool"]
+    assert len(tools) == 1 and json.loads(tools[0]["content"])["result"]["receipt_id"]
+    assert "Compute a shared result" in tools[0]["content"]
+    with state.store.transaction() as db:
+        calls = db.execute("SELECT * FROM inference_calls WHERE run_id=? ORDER BY sequence", (run["id"],)).fetchall()
+        assert len(calls) == 2 and calls[1]["parent_call_id"] == calls[0]["id"]
+        assert [call["purpose"] for call in calls] == ["answer", "continuation"]
+        assert all(json.loads(call["quote_json"])["supports_tools"] for call in calls)
+        assert (
+            db.execute("SELECT count(*) FROM research_tool_receipts WHERE run_id=? AND status='completed'", (run["id"],)).fetchone()[0] == 1
+        )
+    assert (
+        ResearchContext(state.store).inspect(owner["user_id"], owner["organization_id"], topics[1]["id"])["snapshot"]["policy"]
+        == "token-budgeted-cited-memory"
+    )
+
+
+class ManyToolRounds(ResearchFixture):
+    """Free provider fixture with visible progress alongside tools."""
+    def __init__(self, rounds=30, progress=None):
+        super().__init__()
+        self.rounds = rounds
+        self.progress = progress
+
+    def handle(self, request):
+        if request.method == "GET":
+            return super().handle(request)
+        body = json.loads(request.content)
+        self.requests.append(body)
+        index = len(self.requests)
+        if index <= self.rounds:
+            assert body.get("tools"), "research tools disappeared before the authorized budget was exhausted"
+            delta = {"content": self.progress or f"Checking step {index}. ", "tool_calls": [{"index": 0, "id": f"call-{index}",
+                "type": "function", "function": {"name": "ledger_status", "arguments": "{}"}}]}
+            finish = "tool_calls"
+        else:
+            delta, finish = {"content": "The remaining obligation needs another research turn."}, "stop"
+        events = [
+            {"id": f"gen-tools-{index}", "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]},
+            {"choices": [], "usage": {"cost": "0.000008", "prompt_tokens": 20, "completion_tokens": 10}},
+        ]
+        wire = "".join("data: " + json.dumps(value) + "\n\n" for value in events) + "data: [DONE]\n\n"
+        return httpx.Response(200, headers={"content-type": "text/event-stream"}, content=wire)
+
+
+def test_streamed_tool_progress_and_final_answer_are_retained_once_without_rewriting(installation):
+    fixture = ManyToolRounds(rounds=2)
+    state, owner, _, row = turn(installation, fixture, maximum=None)
+    run = state.run(owner["user_id"], owner["organization_id"], row["id"])
+    assert run["status"] == "succeeded" and run["accounting_state"] == "settled"
+    assert run["output_text"] == "Checking step 1. \n\nChecking step 2. \n\nThe remaining obligation needs another research turn."
+
+
+def test_tool_rounds_without_trailing_space_remain_separate_and_have_first_token_timing(installation):
+    fixture = ManyToolRounds(rounds=1, progress="I'll record the references now.")
+    state, owner, _, row = turn(installation, fixture, maximum=None)
+    run = state.run(owner["user_id"], owner["organization_id"], row["id"])
+    assert run["output_text"] == "I'll record the references now.\n\nThe remaining obligation needs another research turn."
+    calls = UsageStore(state.store).calls(owner["user_id"], owner["organization_id"])["calls"]
+    assert all(0 <= call["time_to_response_headers_ms"] <= call["time_to_first_token_ms"] for call in calls)
+    assert run["timing"]["tool_execution_ms"] is not None
+    assert len(calls) == 2
+    assert all(0 <= call["time_to_first_token_ms"] <= call["latency_ms"] for call in calls)
+
+
+def test_round_boundaries_do_not_change_provider_token_fragments_or_length_continuations():
+    from reasoning_ledger.server.research_provider import ResearchCompletion
+
+    client = object.__new__(ResearchCompletion)
+    client._last_visible_finish = "tool_calls"
+    assert client._display_round("Result.", "Next") == "Result.\n\nNext"
+    assert client._display_round("Result.\n", "Next") == "Result.\n\nNext"
+    assert client._display_round("Result.\n\n", "Next") == "Result.\n\nNext"
+    assert client._display_round("Result.", "") == "Result."
+    client._last_visible_finish = "length"
+    assert client._display_round("inter", "national") == "international"
+
+
+def test_research_turn_has_no_implicit_24_tool_ceiling(installation):
+    fixture = ManyToolRounds()
+    state, owner, _, row = turn(installation, fixture, maximum=None)
+    run = state.run(owner["user_id"], owner["organization_id"], row["id"])
+    assert run["status"] == "succeeded" and len(fixture.requests) == 31
+    with state.store.transaction() as db:
+        assert db.execute("SELECT COUNT(*) FROM research_tool_receipts WHERE run_id=? AND status='completed'",
+                          (row["id"],)).fetchone()[0] == 30
+
+
+def test_goal_continues_after_many_tools_and_visible_progress_without_replaying(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, topic, user = owner["organization_id"], topics[1]["id"], owner["user_id"]
+    goals, fixture = ResearchGoals(state), ManyToolRounds()
+    goals.create(user, org, topic, client_id="long-goal-fixture", objective="Investigate a precise lemma",
+                 acceptance=["An independently reviewed proof"], model=MODELS[0], budget_microusd=1000000,
+                 max_turns=10, max_tool_calls=100, duration_seconds=3600)
+    asyncio.run(goals.dispatch(fixture.provider))
+    row = state.claim()
+    ResearchAgent(state, fixture.provider, row, Quote(**json.loads(row["quote_json"]))).execute()
+    assert state.run(user, org, row["id"])["status"] == "succeeded"
+    assert goals.current(user, org, topic)["tool_calls"] == 30
+    asyncio.run(goals.dispatch(fixture.provider))
+    next_run = state.claim()
+    assert next_run and next_run["id"] != row["id"] and next_run["request_id"] != row["request_id"]
+    assert goals.current(user, org, topic)["status"] == "active"
+    assert "do not replay completed side effects" in next_run["context_json"]
+
+
+def test_explicit_goal_tool_budget_still_stops_without_extra_execution(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, topic, user = owner["organization_id"], topics[1]["id"], owner["user_id"]
+    goals, fixture = ResearchGoals(state), ManyToolRounds(rounds=2)
+    goals.create(user, org, topic, client_id="explicit-tools-goal", objective="Investigate a lemma",
+                 acceptance=["An independently reviewed proof"], model=MODELS[0], budget_microusd=1000000,
+                 max_turns=10, max_tool_calls=2, duration_seconds=3600)
+    asyncio.run(goals.dispatch(fixture.provider))
+    row = state.claim()
+    ResearchAgent(state, fixture.provider, row, Quote(**json.loads(row["quote_json"]))).execute()
+    assert state.run(user, org, row["id"])["status"] == "succeeded"
+    assert "tools" not in fixture.requests[-1]
+    asyncio.run(goals.dispatch(fixture.provider))
+    assert state.claim() is None and goals.current(user, org, topic)["status"] == "budget_limited"
+    assert goals.current(user, org, topic)["tool_calls"] == 2
+
+
+def test_internal_execution_error_is_not_context_failure_or_secret_payload(installation, monkeypatch):
+    def fail(*args, **kwargs):
+        raise ValueError("private runtime payload " + KEY)
+
+    monkeypatch.setattr("reasoning_ledger.server.research_agent.ResearchTools", fail)
+    state, owner, _, row = turn(installation, ResearchFixture(), maximum=None)
+    result = state.run(owner["user_id"], owner["organization_id"], row["id"])
+    assert result["error_code"] == "agent_execution_error"
+    events = state.events(owner["user_id"], owner["organization_id"], row["id"], 0)
+    assert "ValueError" in json.dumps(events) and KEY not in json.dumps(events)
+
+
+def test_reasoning_only_rounds_continue_with_preserved_evidence_and_current_holds(installation):
+    fixture = ResearchFixture("reasoning_only")
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "succeeded" and result["actual_microusd"] == 24
+    assert len(fixture.requests) == 3
+    assert any(message.get("reasoning_details") for message in fixture.requests[1]["messages"])
+    assert result["reserved_microusd"] == 24
+    assert result["cost_progress"] == {"confirmed_microusd": 24, "next_call_estimate_microusd": 0, "internal_hold_microusd": 0}
+    assert [item["round"] for item in result["activity"] if item["phase"] == "round"] == [1, 2, 3]
+
+
+def test_progress_exposes_brief_provider_summary_not_raw_reasoning(installation):
+    state, owner, _, run = turn(installation, ResearchFixture("summary"))
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "succeeded"
+    assert [event["summary"] for event in result["activity"] if event["phase"] == "reasoning_summary"] == ["Checking the hypotheses."]
+    assert "Opaque fixture reasoning" not in json.dumps(result["activity"])
+
+
+def test_gamma_llm_does_not_gain_implicit_research_tools(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, user, topic = owner["organization_id"], owner["user_id"], topics[2]["id"]
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    with state.store.transaction(write=True) as db:
+        state._enqueue(db, user, org, topic, "gamma-tool-denial-001", state.parameters([MODELS[0]], None, 50, None), [quote],
+                       workflow_context=[{"role": "system", "content": "A workflow model step."},
+                                         {"role": "user", "content": "Answer only."}])
+    row = state.claim()
+    fixture = ResearchFixture("unexpected_tool")
+    ResearchAgent(state, fixture.provider, row, Quote(**json.loads(row["quote_json"]))).execute()
+    assert "tools" not in fixture.requests[0]
+    assert state.run(user, org, row["id"])["error_code"] == "unsupported_tool_call"
+    with state.store.transaction() as db:
+        assert db.execute("SELECT COUNT(*) FROM mathematical_records").fetchone()[0] == 0
+        assert db.execute("SELECT COUNT(*) FROM research_tool_receipts").fetchone()[0] == 0
+
+
+def test_nullable_reasoning_signature_survives_tool_continuation(installation):
+    fixture = ResearchFixture("gemini_nullable")
+    state, owner, _, run = turn(installation, fixture, maximum=None)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "succeeded" and result["actual_microusd"] == 16
+    assert len(fixture.requests) == 2
+    assistant = next(message for message in fixture.requests[1]["messages"] if message["role"] == "assistant")
+    assert assistant["reasoning_details"][0]["signature"] is None
+    assert assistant["reasoning_details"][0]["id"] is None
+    assert all("max_completion_tokens" not in request for request in fixture.requests)
+
+
+def test_protocol_failure_identifies_reasoning_stage_without_leaking_payload(installation):
+    fixture = ResearchFixture("gemini_bad")
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "failed" and result["accounting_state"] == "uncertain"
+    assert result["diagnostics"]["protocol_stage"] == "reasoning"
+    assert KEY not in json.dumps(result["diagnostics"])
+
+
+def test_queued_turn_executes_and_reports_its_captured_prompt(installation):
+    _, state, _, owner, topics = prepare(installation)
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(
+        owner["user_id"], owner["organization_id"], topics[1]["id"], "captured-prompt",
+        state.parameters([MODELS[0]], 256, 50, None), [quote],
+    )
+    row = state.claim()
+    messages = json.loads(row["context_json"])
+    messages[0]["content"] = "Captured mathematical instructions for this queued turn."
+    with state.store.transaction(write=True) as db:
+        snapshot = json.loads(
+            db.execute("SELECT snapshot_json FROM research_contexts WHERE request_id=?", (row["request_id"],)).fetchone()[0]
+        )
+        snapshot.pop("system_prompt", None)
+        snapshot.update(prompt_version="captured-fixture-prompt", messages=messages)
+        db.execute("UPDATE research_contexts SET snapshot_json=? WHERE request_id=?", (json.dumps(snapshot), row["request_id"]))
+    row["context_json"] = json.dumps(messages)
+    fixture = ResearchFixture("plain")
+    ResearchAgent(state, fixture.provider, row, quote).execute()
+    assert fixture.requests[0]["messages"][0]["content"] == messages[0]["content"]
+    records = UsageStore(state.store).calls(owner["user_id"], owner["organization_id"])["calls"]
+    assert records[0]["prompt_version"] == "captured-fixture-prompt"
+    inspected = ResearchContext(state.store).inspect(owner["user_id"], owner["organization_id"], topics[1]["id"])
+    assert inspected["system_prompt"] == messages[0]["content"]
+
+
+def test_unknown_second_call_does_not_hide_known_first_charge(installation):
+    fixture = ResearchFixture("uncertain")
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "failed" and result["accounting_state"] == "uncertain"
+    assert result["actual_microusd"] is None
+    assert result["diagnostics"]["http_status"] == 503 and KEY not in json.dumps(result)
+    records = UsageStore(state.store).calls(owner["user_id"], owner["organization_id"], limit=100)
+    assert len(records["calls"]) == 2
+    assert sorted(item["accounting_state"] for item in records["calls"]) == ["settled", "uncertain"]
+
+
+@pytest.mark.parametrize("mode,calls,cost,accounting", [
+    ("credit_first", 1, None, "released"), ("credit_later", 2, 8, "settled"),
+    ("credit_continuation", 2, 8, "settled"),
+])
+def test_pre_generation_credit_refusal_releases_only_rejected_call(installation, mode, calls, cost, accounting):
+    fixture = ResearchFixture(mode)
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "failed" and result["accounting_state"] == accounting
+    assert result["actual_microusd"] == cost and len(fixture.requests) == calls
+    assert result["diagnostics"]["reason"] == "weight_exceeds_budget"
+    assert KEY not in json.dumps(result)
+    records = UsageStore(state.store).calls(owner["user_id"], owner["organization_id"])["calls"]
+    assert sorted(item["accounting_state"] for item in records) == sorted(["settled"] * (calls - 1) + ["released"])
+    if mode == "credit_continuation":
+        assert result["message_id"] and "Segment 1." in result["output_text"]
+
+
+@pytest.mark.parametrize("mode,code", [("empty", "agent_empty_response"), ("invalid_arguments", "agent_invalid_tool_arguments")])
+def test_native_failures_keep_known_usage_and_safe_specific_reason(installation, mode, code):
+    state, owner, _, run = turn(installation, ResearchFixture(mode))
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "failed" and result["error_code"] == code
+    assert result["accounting_state"] == "settled" and result["actual_microusd"] == 8
+    assert KEY not in json.dumps(result)
+    with state.store.transaction() as db:
+        assert db.execute("SELECT count(*) FROM research_tool_receipts WHERE run_id=?", (run["id"],)).fetchone()[0] == 0
+        events = [json.loads(row[0]) for row in db.execute("SELECT event_json FROM llm_events WHERE run_id=?", (run["id"],))]
+        assert any(event.get("phase") == "failed" and event["reason"] == code for event in events)
+
+
+@pytest.mark.parametrize("mode,status,calls", [("long", "succeeded", 6)])
+def test_long_answer_continues_in_bounded_priced_calls_and_preserves_partial(installation, mode, status, calls):
+    fixture = ResearchFixture(mode)
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == status and result["accounting_state"] == "settled"
+    assert result["actual_microusd"] == 8 * calls and result["completion_tokens"] == 10 * calls
+    assert result["output_text"] == "".join(f"Segment {index}. " for index in range(1, calls + 1))
+    assert result["message_id"] and len(fixture.requests) == calls
+    assert all(request["max_completion_tokens"] <= 256 for request in fixture.requests)
+    assert all("tools" not in request for request in fixture.requests[1:])
+    if status == "failed":
+        assert result["error_code"] == "output_token_limit"
+
+
+def test_default_output_has_no_wire_token_cap_and_records_exact_call_events(installation):
+    fixture = ResearchFixture("long")
+    state, owner, _, run = turn(installation, fixture, maximum=None)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "succeeded" and len(fixture.requests) == 6
+    assert all("max_completion_tokens" not in request and "max_tokens" not in request for request in fixture.requests)
+    with state.store.transaction() as db:
+        events = [json.loads(row[0]) for row in db.execute("SELECT event_json FROM llm_events WHERE run_id=?", (run["id"],))]
+    requests = [event["request"] for event in events if event.get("phase") == "provider_request"]
+    responses = [event["response"] for event in events if event.get("phase") == "provider_response"]
+    assert requests == fixture.requests and len(responses) == 6
+    assert KEY not in json.dumps(events)
+
+
+@pytest.mark.parametrize("change_profile", [False, True])
+def test_compaction_preserves_sources_prices_and_captured_instructions(installation, change_profile):
+    _, state, client, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    settings = f"/api/organizations/{org}/topics/{topic}/research-settings"
+    from reasoning_ledger.server.research_tools import DEFAULT_TOOLS
+    if change_profile:
+        client.put(settings, json={"tools": DEFAULT_TOOLS, "prompt_profile": "blueprint"}).raise_for_status()
+    for number in range(70):
+        state.store.post_message(
+            owner["user_id"],
+            org,
+            topic,
+            f"Research source {number}: V is a vector space over Q. " + "Keep the missing dimension hypothesis. " * 40,
+            "source-" + str(number),
+        )
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(owner["user_id"], org, topic, "compaction-test", state.parameters([MODELS[0]], 512, 50, None), [quote])
+    fixture, run = ResearchFixture("memory"), state.claim()
+    captured_prompt = json.loads(run["context_json"])[0]["content"]
+    if change_profile:
+        client.put(settings, json={"tools": DEFAULT_TOOLS, "prompt_profile": "lean"}).raise_for_status()
+    ResearchAgent(state, fixture.provider, run, quote).execute()
+    result = state.run(owner["user_id"], org, run["id"])
+    assert result["status"] == "succeeded", result
+    view = ResearchContext(state.store).inspect(owner["user_id"], org, topic)
+    assert view["system_prompt"] == captured_prompt
+    assert fixture.requests[-1]["messages"][0]["content"] == captured_prompt
+    if change_profile:
+        assert view["snapshot"]["prompt_profile"] == "blueprint"
+        assert client.get(settings).json()["prompt_profile"] == "lean"
+    assert view["working_memory"]["body"]["definitions"][0]["sources"]
+    assert "dimension is not established" in json.dumps(view["working_memory"])
+    with state.store.transaction() as db:
+        assert (
+            db.execute(
+                "SELECT count(*) FROM messages WHERE organization_id=? AND topic_id=? AND sender_kind='human'", (org, topic)
+            ).fetchone()[0]
+            == 71
+        )
+        assert db.execute("SELECT count(*) FROM inference_calls WHERE run_id=? AND purpose='compaction'", (run["id"],)).fetchone()[0] >= 1
+        assert db.execute("SELECT count(*) FROM research_memories WHERE organization_id=? AND topic_id=?", (org, topic)).fetchone()[0] >= 1
+    assert result["actual_microusd"] == len(fixture.requests) * 8
+    assert all(request["max_completion_tokens"] <= 512 for request in fixture.requests)
+    assert fixture.requests[-1]['max_completion_tokens'] == 512  # compaction preserves the answer's per-call limit
+
+
+def test_bad_compaction_never_discards_the_original_transcript(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    for number in range(70):
+        state.store.post_message(owner["user_id"], org, topic, "A precise original hypothesis. " * 60, "memory-source-" + str(number))
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(owner["user_id"], org, topic, "bad-memory", state.parameters([MODELS[0]], 256, 50, None), [quote])
+    run = state.claim()
+    ResearchAgent(state, ResearchFixture("bad_compaction").provider, run, quote).execute()
+    assert state.run(owner["user_id"], org, run["id"])["status"] == "failed"
+    with state.store.transaction() as db:
+        assert db.execute("SELECT count(*) FROM research_memories WHERE topic_id=?", (topic,)).fetchone()[0] == 0
+        assert db.execute("SELECT count(*) FROM messages WHERE topic_id=?", (topic,)).fetchone()[0] == 71
+
+
+def test_goal_dispatch_and_explicit_completion_use_the_same_agent_loop(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    goals = ResearchGoals(state)
+    goals.create(
+        owner["user_id"],
+        org,
+        topic,
+        client_id="goal-request-id-123456",
+        objective="Explain the supplied result",
+        acceptance=["Give a cited argument with missing hypotheses explicit"],
+        model=MODELS[0],
+        budget_microusd=1_000_000,
+        max_turns=3,
+        max_tool_calls=5,
+        duration_seconds=3600,
+    )
+    fixture = ResearchFixture("goal")
+    asyncio.run(goals.dispatch(fixture.provider))
+    run = state.claim()
+    assert run is not None
+    ResearchAgent(state, fixture.provider, run, Quote(**json.loads(run["quote_json"]))).execute()
+    goal = goals.current(owner["user_id"], org, topic)
+    assert goal["status"] == "complete" and goal["turns"] == 1
+    assert state.run(owner["user_id"], org, run["id"])["status"] == "succeeded"
+    asyncio.run(goals.dispatch(fixture.provider))
+    assert state.claim() is None
+
+
+def test_goal_api_and_topic_tool_settings_are_authenticated_and_replayable(installation):
+    _, state, client, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    path = f"/api/organizations/{org}/topics/{topic}"
+    assert client.get(path + "/goal").status_code == 200
+    assert client.get(path + "/research-context").json()["prompt_version"]
+    settings = client.put(path + "/research-settings", json={"tools": ["history", "knowledge"]})
+    assert settings.status_code == 200
+    assert client.get(path + "/research-settings").json()["tools"] == ["history", "knowledge"]
+    body = {
+        "client_id": "api-goal-request-123456",
+        "objective": "Prove the supplied lemma",
+        "acceptance": ["Identify every missing hypothesis"],
+        "model": MODELS[0],
+        "budget_microusd": 500000,
+        "max_turns": 5,
+        "max_tool_calls": 10,
+        "duration_seconds": 3600,
+    }
+    first = client.post(path + "/goal", json=body)
+    assert first.status_code == 202, first.text
+    repeated = client.post(path + "/goal", json=body)
+    assert repeated.status_code == 202 and repeated.json()["id"] == first.json()["id"]
+    with state.store.transaction() as db:
+        assert db.execute("SELECT count(*) FROM messages WHERE topic_id=? AND content LIKE '/goal%'", (topic,)).fetchone()[0] == 1
+    assert client.patch(path + "/goal/" + first.json()["id"], json={"status": "paused"}).status_code == 200
+    assert client.get(path + "/goal").json()["status"] == "paused"
+
+
+def test_tool_capable_provider_rejects_invalid_unicode_without_duplicate_charge(installation):
+    fixture = ResearchFixture("invalid_unicode")
+    state, owner, _, run = turn(installation, fixture)
+    result = state.run(owner["user_id"], owner["organization_id"], run["id"])
+    assert result["status"] == "failed" and result["error_code"] == "provider_protocol"
+    assert result["actual_microusd"] == 8 and len(fixture.requests) == 1
+    records = UsageStore(state.store).calls(owner["user_id"], owner["organization_id"], limit=100)["calls"]
+    assert len(records) == 1 and records[0]["accounting_state"] == "settled" and records[0]["status"] == "failed"
+
+
+def test_changed_queued_tool_grant_fails_run_before_provider_submission(installation):
+    _, state, client, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(owner["user_id"], org, topic, "queued-grant-fixture", state.parameters([MODELS[0]], 256, 50, None), [quote])
+    assert client.put(f"/api/organizations/{org}/topics/{topic}/research-settings", json={"tools": []}).status_code == 200
+    run, fixture = state.claim(), ResearchFixture()
+    ResearchAgent(state, fixture.provider, run, quote).execute()
+    result = state.run(owner["user_id"], org, run["id"])
+    assert result["status"] == "failed" and result["accounting_state"] == "released"
+    assert fixture.requests == []
+
+
+def test_plain_beta_with_no_tool_groups_does_not_advertise_goal_controls(installation):
+    from reasoning_ledger.server.research_tools import ResearchTools
+
+    _, state, client, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    assert client.put(f"/api/organizations/{org}/topics/{topic}/research-settings", json={"tools": []}).status_code == 200
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(owner["user_id"], org, topic, "plain-beta-grants", state.parameters([MODELS[0]], 256, 50, None), [quote])
+    assert ResearchTools(state, state.claim()).registry.list() == []
+
+
+def test_compaction_preserves_a_small_per_call_output_limit(installation):
+    _, state, _, owner, topics = prepare(installation)
+    org, topic = owner["organization_id"], topics[1]["id"]
+    for number in range(70):
+        state.store.post_message(owner["user_id"], org, topic, "A precise original hypothesis. " * 60, "bounded-memory-" + str(number))
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192, supports_tools=True)
+    state.enqueue(owner["user_id"], org, topic, "bounded-memory", state.parameters([MODELS[0]], 32, 50, None), [quote])
+    fixture, run = ResearchFixture("memory"), state.claim()
+    ResearchAgent(state, fixture.provider, run, quote).execute()
+    result = state.run(owner["user_id"], org, run["id"])
+    assert result["status"] == "succeeded" and result["actual_microusd"] == len(fixture.requests) * 8
+    assert len(fixture.requests) >= 2
+    assert all(request["max_completion_tokens"] <= 32 for request in fixture.requests)
+    with state.store.transaction() as db:
+        assert db.execute("SELECT count(*) FROM messages WHERE topic_id=? AND sender_kind='human'", (topic,)).fetchone()[0] == 71
+
+
+def test_accepted_beta_without_research_snapshot_is_not_mislabeled_as_workflow(installation):
+    from test_public_inference import Fixture
+
+    _, state, _, owner, topics = prepare(installation)
+    quote = Quote(MODELS[0], "0.000001", "0.000002", "0", 200000, 8192)
+    state.enqueue(
+        owner["user_id"],
+        owner["organization_id"],
+        topics[1]["id"],
+        "legacy-beta-queue",
+        state.parameters([MODELS[0]], 256, 50, None),
+        [quote],
+    )
+    row = state.claim()
+    with state.store.transaction(write=True) as db:
+        db.execute("DELETE FROM research_contexts WHERE request_id=?", (row["request_id"],))
+    asyncio.run(InferenceWorker(state, Fixture().provider)._execute(row))
+    with state.store.transaction() as db:
+        call = db.execute("SELECT purpose FROM inference_calls WHERE run_id=?", (row["id"],)).fetchone()
+        assert call[0] == "answer"

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/reference-head.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "reference_id", "current_revision_id"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "reference_id": {"type": "string", "pattern": "^ref_[0-9a-f]{24}$"},
+    "current_revision_id": {"type": "string", "pattern": "^refrev_[0-9a-f]{24}$"}
+  }
+}

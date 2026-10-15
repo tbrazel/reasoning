@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/executor/v1alpha1/artifact.schema.json",
+  "title": "Reasoning Executor Artifact",
+  "description": "Immutable metadata for an input, output, log, or checkpoint artifact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "artifact_id",
+    "job_id",
+    "name",
+    "kind",
+    "media_type",
+    "size_bytes",
+    "digest",
+    "created_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.executor.artifact"},
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "artifact_id": {"type": "string", "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "job_id": {"type": "string", "pattern": "^job_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 255},
+    "kind": {"enum": ["input", "output", "log", "checkpoint"]},
+    "media_type": {"type": "string", "minLength": 1, "maxLength": 255},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "provenance_id": {"type": "string", "pattern": "^provenance_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+  }
+}

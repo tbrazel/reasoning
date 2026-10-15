@@ -1,0 +1,58 @@
+{
+  "schema_id": "reasoning.platform.harness-provider",
+  "schema_version": "1.0.0-alpha.1",
+  "descriptor_id": "harness_provider_reasoning_cloud",
+  "harness_id": "reasoning-cloud",
+  "display_name": "Reasoning Cloud harness",
+  "location": "hosted",
+  "transport": "remote_service",
+  "adapter_version": "1.0.0-alpha.1",
+  "protocol_version": "1",
+  "event_version": "1",
+  "session": {
+    "modes": ["fresh", "resume"],
+    "durability": "service",
+    "reconnect": {
+      "supported": true,
+      "cursor": "opaque",
+      "after": "exclusive",
+      "delivery": "at_least_once",
+      "deduplicate_by": "event_id"
+    }
+  },
+  "features": {
+    "streaming": true,
+    "tools": true,
+    "skills": true,
+    "structured_output": true,
+    "mcp": false,
+    "approvals": true,
+    "interrupt": true,
+    "steering": true,
+    "checkpoints": true,
+    "subagents": false,
+    "context_compaction": true,
+    "reports_usage": true,
+    "reports_cost": true,
+    "reasoning_visibility": "summary",
+    "reasoning_efforts": ["none", "low", "medium", "high"]
+  },
+  "access": {
+    "workspace": ["none", "read_only", "read_write"],
+    "network": ["denied", "allowlisted"],
+    "processes": true
+  },
+  "supported_inference_route_ids": ["route_local_ollama", "route_cloud_openrouter"],
+  "supported_compute_target_ids": ["target_local_container", "target_cloud_research_cpu"],
+  "credential_custody": {
+    "account_material": "service_owned",
+    "inference_material": "service_owned",
+    "reusable_material_exported": false
+  },
+  "limitations": ["A hosted harness cannot directly read an untransferred local project."],
+  "conformance": {
+    "suite_version": "1.0.0-alpha.1",
+    "status": "partial",
+    "verified_capabilities": ["fresh", "resume", "streaming", "tools", "interrupt"]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "positive": [
+    {
+      "id": "quote-expiry-release",
+      "fixture": "positive/pricing.compute-expired-pre-dispatch.json",
+      "reason": "quote_expired",
+      "release_relation": "at_or_after_quote_expiry"
+    },
+    {
+      "id": "explicit-cancellation-release",
+      "fixture": "positive/pricing.hybrid-cancelled-pre-dispatch.json",
+      "reason": "cancelled_before_dispatch",
+      "release_relation": "after_reservation_before_quote_expiry"
+    }
+  ],
+  "negative_case_ids": [
+    "expiry-reason-cannot-release-before-expiry",
+    "cancellation-reason-cannot-release-at-expiry",
+    "release-cannot-precede-reservation",
+    "quote-expiry-must-follow-issuance",
+    "reservation-must-occur-before-quote-expiry",
+    "dispatch-cannot-follow-quote-expiry",
+    "post-dispatch-terminal-cannot-precede-dispatch",
+    "settled-terminal-cannot-precede-dispatch",
+    "unknown-observation-cannot-precede-dispatch"
+  ]
+}

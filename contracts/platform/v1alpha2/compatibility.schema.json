@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/platform/v1alpha2/compatibility.schema.json",
+  "title": "Reasoning Platform Alpha.2 Contract Compatibility Rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_id", "schema_version", "family", "contracts", "dependencies", "rules"],
+  "properties": {
+    "schema_id": {"const": "reasoning.platform.compatibility"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "family": {"const": "reasoning-platform-v1alpha2"},
+    "contracts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_id", "version", "schema_path"],
+        "properties": {
+          "schema_id": {"type": "string"},
+          "version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+          "schema_path": {"type": "string"}
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "schema_id": {"const": "reasoning.platform.pricing"},
+              "schema_path": {"const": "pricing.schema.json"}
+            }
+          },
+          {
+            "properties": {
+              "schema_id": {"const": "reasoning.platform.route-plan"},
+              "schema_path": {"const": "route-plan.schema.json"}
+            }
+          }
+        ]
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform_compute_target",
+        "platform_harness_provider",
+        "platform_inference_route",
+        "platform_local_harness_connector",
+        "platform_project_bundle",
+        "executor",
+        "cloud_execution_api",
+        "capability_manifest"
+      ],
+      "properties": {
+        "platform_compute_target": {"const": "1.0.0-alpha.1"},
+        "platform_harness_provider": {"const": "1.0.0-alpha.1"},
+        "platform_inference_route": {"const": "1.0.0-alpha.1"},
+        "platform_local_harness_connector": {"const": "1.0.0-alpha.1"},
+        "platform_project_bundle": {"const": "1.0.0-alpha.1"},
+        "executor": {"const": "1.0.0-alpha.1"},
+        "cloud_execution_api": {"const": "1.0.0-alpha.1"},
+        "capability_manifest": {"const": "1.0.0-alpha.1"}
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prerelease_negotiation",
+        "unknown_schema",
+        "unknown_required_field",
+        "additive_change",
+        "breaking_change",
+        "alpha_1_pricing_migration",
+        "pre_dispatch_release_encoding",
+        "digest_canonicalization",
+        "digest_encoding",
+        "digest_algorithm"
+      ],
+      "properties": {
+        "prerelease_negotiation": {"const": "exact_version"},
+        "unknown_schema": {"const": "reject"},
+        "unknown_required_field": {"const": "reject"},
+        "additive_change": {"const": "new_version_and_explicit_consumer_support"},
+        "breaking_change": {"const": "new_major_version_with_compatibility_window"},
+        "alpha_1_pricing_migration": {"const": "negotiate_alpha_2_never_reinterpret_alpha_1_dispatch"},
+        "pre_dispatch_release_encoding": {"const": "empty_dispatches_empty_usage_explicit_phase_and_reason"},
+        "digest_canonicalization": {"const": "RFC 8785 JSON Canonicalization Scheme"},
+        "digest_encoding": {"const": "UTF-8"},
+        "digest_algorithm": {"const": "SHA-256"}
+      }
+    }
+  }
+}

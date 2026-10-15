@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ledger/proof-revision.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_id",
+    "proof_id",
+    "revision_id",
+    "parent_revision_id",
+    "target_revision_id",
+    "premises",
+    "body",
+    "artifacts",
+    "notes",
+    "author"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+    "proof_id": {"type": "string", "pattern": "^prf_[0-9a-f]{24}$"},
+    "revision_id": {"type": "string", "pattern": "^prfrev_[0-9a-f]{24}$"},
+    "parent_revision_id": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^prfrev_[0-9a-f]{24}$"}
+      ]
+    },
+    "target_revision_id": {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"},
+    "premises": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["claim_id", "revision_id", "note"],
+            "properties": {
+              "claim_id": {"type": "string", "pattern": "^clm_[0-9a-f]{24}$"},
+              "revision_id": {"type": "string", "pattern": "^clmrev_[0-9a-f]{24}$"},
+              "note": {"anyOf": [{"type": "null"}, {"type": "string"}]}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["unresolved", "note"],
+            "properties": {
+              "unresolved": {"type": "string", "minLength": 1},
+              "note": {"anyOf": [{"type": "null"}, {"type": "string"}]}
+            }
+          }
+        ]
+      }
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text", "format"],
+      "properties": {
+        "kind": {"const": "argument"},
+        "text": {"type": "string", "minLength": 1},
+        "format": {"const": "tex-prose-v1"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "artifact_sha256", "declaration"],
+            "properties": {
+              "kind": {"const": "lean"},
+              "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "declaration": {"type": "string", "minLength": 1}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "invocation_sha256", "output_sha256"],
+            "properties": {
+              "kind": {"const": "computation"},
+              "invocation_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          }
+        ]
+      }
+    },
+    "notes": {"anyOf": [{"type": "null"}, {"type": "string"}]},
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operator", "agent", "session"],
+      "properties": {
+        "operator": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "agent": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]},
+        "session": {"anyOf": [{"type": "null"}, {"type": "string", "minLength": 1}]}
+      }
+    }
+  }
+}

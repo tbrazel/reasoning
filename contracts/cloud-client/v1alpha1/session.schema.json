@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/cloud-client/v1alpha1/session.schema.json",
+  "title": "Reasoning Cloud Client Session View",
+  "description": "A credential-free post-authentication connection view. Authentication mechanisms and material are outside this record.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "schema_version", "state"],
+      "properties": {
+        "schema_id": {"const": "reasoning.cloud-client.session"},
+        "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+        "state": {"const": "disconnected"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_id", "schema_version", "state", "actor", "tenant_id", "capability_snapshot_digest"],
+      "properties": {
+        "schema_id": {"const": "reasoning.cloud-client.session"},
+        "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+        "state": {"const": "connected"},
+        "actor": {"$ref": "common.schema.json#/$defs/actor"},
+        "tenant_id": {"$ref": "common.schema.json#/$defs/stableId"},
+        "capability_snapshot_digest": {"$ref": "common.schema.json#/$defs/digest"}
+      }
+    }
+  ]
+}

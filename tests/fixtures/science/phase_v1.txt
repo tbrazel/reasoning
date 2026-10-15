@@ -1,0 +1,16 @@
+REASONING_AUGMENTED_FOUR_BLOCK_PHASE_QUOTIENT_V1
+old_block_degree_pattern_count=6
+old_equations_block_mu5_invariant=1
+selected_term_counts=2,2
+q7_difference=1,2,3,4
+q9_difference=3,1,4,2
+difference_multiplier=3
+phase_tuple_count=625
+common_kernel_count=125
+diagonal_count=5
+relative_kernel_count=25
+normalized_phase_tuple_count=125
+normalized_orbit_count=5
+invariant_histogram=25,25,25,25,25
+canonical_representatives=0,0,0,0;0,3,0,0;0,1,0,0;0,4,0,0;0,2,0,0
+REASONING_END

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Arithmetic Geometry Research"
+  short_description: "Investigate curves and fields with LMFDB"

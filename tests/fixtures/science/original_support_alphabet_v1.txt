@@ -1,0 +1,13 @@
+REASONING_LEVEL25_PURE_POWER_ALPHABET_V1
+pivot_rank=14
+free_assignment_count=48828125
+solution_count=3125
+nonzero_solution_count=3124
+equation_residual_failure_count=0
+non_block_constant_solution_count=0
+expected_block_constant_count=3125
+expected_block_constant_failure_count=0
+support_block_histogram=0:1,1:20,2:160,3:640,4:1280,5:1024
+power_image_counts=0:1,1:25,10:25,100:25,91:25
+power_image_outside_count=0
+REASONING_END

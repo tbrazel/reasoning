@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="13" fill="#0f1729" />
+  <path
+    d="M12 9H4V55H12 M52 9H60V55H52"
+    fill="none"
+    stroke="#e8edf5"
+    stroke-width="4"
+    stroke-linecap="square"
+    stroke-linejoin="miter"
+  />
+  <text
+    x="32"
+    y="31"
+    fill="#e8edf5"
+    font-family="Courier New, Courier, monospace"
+    font-size="46"
+    font-weight="700"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >r</text>
+</svg>

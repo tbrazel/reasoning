@@ -1,0 +1,157 @@
+{
+  "schema_id": "reasoning.cloud-client.contract-bundle",
+  "schema_version": "1.0.0-alpha.1",
+  "bundle_id": "reasoning-cloud-client-v1alpha1",
+  "canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "encoding": "UTF-8",
+  "hash_algorithm": "SHA-256",
+  "members": [
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/negative/cases.json",
+      "digest": "sha256:91512a2e4896998f79a39e5f24a31987bb05fe0d3f561325f73cc22c329401ff"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/positive/capabilities.json",
+      "digest": "sha256:f4dbf073a619de1bf837e442c5c520b9b17fa14afd4ee8b4d32088876540507b"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/positive/run-event-page.complete.json",
+      "digest": "sha256:fbb4aaa99fed021b2e9aef5024c70d8e5492f3baa4e48d165535f4fcaf9f7764"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/positive/run.succeeded.json",
+      "digest": "sha256:299f4cc2ffa1f4384d187122eaa652d65c6605c33b470eba8ed706975add8934"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/positive/session.connected.json",
+      "digest": "sha256:5283b62c0c2c8c897e87c7421671976b928944eaa890d6011425dcacee2ee43f"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/fixtures/positive/session.disconnected.json",
+      "digest": "sha256:e993bd01d0d0c43145593e57fd1e91d02c0047a0c8e5f6bc75e7fb4f723ff80f"
+    },
+    {
+      "path": "conformance/cloud-client/v1alpha1/suite.json",
+      "digest": "sha256:05e9a9f08a6bd21aae2e9e331a75b0e857d81b99ddc769b204720b2cca4cb403"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/capabilities.schema.json",
+      "digest": "sha256:8bde36427a0982450c44d29169d11677945d5c10931c1eac0df099c0e661ec3c"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/common.schema.json",
+      "digest": "sha256:4dd4e38e18f2711935605a14cb5d8b7da51308c241494e68228f80e6f850c9d4"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/compatibility.json",
+      "digest": "sha256:1d7429a07a3c67a2703ced014c93f28160ceee240cecc47c1ef496da0c2cc9d0"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/compatibility.schema.json",
+      "digest": "sha256:8e0e6d1c12fc29e5c30740d016ea92c25533abfdf8310250dd4680d7e1b82edd"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/contract-bundle.schema.json",
+      "digest": "sha256:8800b7e0f5f89c1a48771a9419df760e0cfc92a2f0307ad9251b5fa81626e845"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/run-event-page.schema.json",
+      "digest": "sha256:b176d10b2abc3c284dcbcff2a35e89edc7300c0481a43fad013df6f2e989e803"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/run.schema.json",
+      "digest": "sha256:7b85d9ddbbb8b38caa37fdcd9b31e45f100be9e963f9e674d93549ce743e5a25"
+    },
+    {
+      "path": "contracts/cloud-client/v1alpha1/session.schema.json",
+      "digest": "sha256:677152d76d21798e63e29c9e5b42081e6a520fd14b3b207e1b2abc435e864ee9"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "executor-conformance",
+      "version": "1.0.0-alpha.1",
+      "path": "conformance/executor/v1alpha1/suite.yaml",
+      "digest": "sha256:2008467b6648363bdfa6ca2893cc5d15454af1d55178594b15069f1ca00fe538"
+    },
+    {
+      "id": "cloud-execution-api",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/cloud/v1alpha1/execution.openapi.yaml",
+      "digest": "sha256:80b3cb7a389e1755f125287e9e9b16f551fd888c3f59c6aebfe3117a589aae56"
+    },
+    {
+      "id": "executor-artifact",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/artifact.schema.json",
+      "digest": "sha256:436a0b48871883adcbc89992dd5d32458e433477553bd3426a15c90d19c97e54"
+    },
+    {
+      "id": "executor-error",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/error.schema.json",
+      "digest": "sha256:1cc092b1cc077996bb2cfb0b2e3401abe128a969c24ef63f3172dfb2064cc5f9"
+    },
+    {
+      "id": "executor-image-attestation",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/image-attestation.schema.json",
+      "digest": "sha256:ff996f53ea49eb0f04abaae30e2873046ff257e8b5e2faea2da178acfc255c16"
+    },
+    {
+      "id": "capability-manifest",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/image-capabilities.schema.json",
+      "digest": "sha256:3f17e467c5b053d84b5590d1b87bcb095b320711be75111b3a9338da36c8fc3d"
+    },
+    {
+      "id": "executor-job-event",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/job-event.schema.json",
+      "digest": "sha256:bc529c705a4ef909c806160c6f5ff40f58aef56afe6ac7f7fa322bd08e284267"
+    },
+    {
+      "id": "executor-job-result",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/job-result.schema.json",
+      "digest": "sha256:0b315d787eb4aac7a2012dad98ac7852de12d9ab4766ea61e802e2e28e55f4a3"
+    },
+    {
+      "id": "executor-job-spec",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/job-spec.schema.json",
+      "digest": "sha256:741f7dc45f7b132f2e522efa832ea0667331bce88285298f799bcebbd12ed87e"
+    },
+    {
+      "id": "executor-job-status",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/job-status.schema.json",
+      "digest": "sha256:cac13b73043de4aad44dab56683e987b2c1692473c8f2fc0192b71ad190a172a"
+    },
+    {
+      "id": "executor-provenance",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/provenance.schema.json",
+      "digest": "sha256:39ce1a2ab761a89383936417ce4b68746e72c0ae2018c0a52c4230abab101e5e"
+    },
+    {
+      "id": "executor-state-machine",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/executor/v1alpha1/state-machine.yaml",
+      "digest": "sha256:b48b2ecc911fd6a23531ce34ac12dbee0ef2df5e9ff31dfb87776a281d4df400"
+    },
+    {
+      "id": "platform-alpha-1",
+      "version": "1.0.0-alpha.1",
+      "path": "contracts/platform/v1alpha1/bundle-manifest.json",
+      "digest": "sha256:e99e593dcaa92db1eb1722404c42aae627c3d7dff641fc2f8e1007f1464c534a"
+    },
+    {
+      "id": "platform-alpha-2",
+      "version": "1.0.0-alpha.2",
+      "path": "contracts/platform/v1alpha2/bundle-manifest.json",
+      "digest": "sha256:25673e306aee14bbb60372b7e671da3a54546849583566ded28291414060d3b5"
+    }
+  ],
+  "bundle_digest": "sha256:58f45ca5f9e5a53382b40444399e4cc792d297ead59b6387fd482ab72e0ad6b7"
+}

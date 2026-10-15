@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/operation.schema.json",
+  "title": "Reasoning Shared Inference Operation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "organization_id", "workspace_id", "topic_id",
+    "operation_id", "requested_by", "route", "prompt", "model", "reasoning_effort",
+    "state", "runner", "progress", "usage", "created_at", "updated_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.collaboration.operation"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "organization_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "workspace_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "topic_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "operation_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "requested_by": {"$ref": "common.schema.json#/$defs/actor"},
+    "route": {"enum": ["contributed_codex", "metered_openrouter"]},
+    "prompt": {"type": "string", "minLength": 1, "maxLength": 262144},
+    "model": {"type": "string", "minLength": 1, "maxLength": 160},
+    "reasoning_effort": {"enum": ["none", "low", "medium", "high", "xhigh", "max", "ultra"]},
+    "state": {
+      "enum": ["queued", "offered", "accepted", "running", "succeeded", "failed", "cancelled", "expired", "outcome_unknown"]
+    },
+    "runner": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runner_id", "display_name", "owner"],
+          "properties": {
+            "runner_id": {"$ref": "common.schema.json#/$defs/stableId"},
+            "display_name": {"type": "string", "minLength": 1, "maxLength": 120},
+            "owner": {"$ref": "common.schema.json#/$defs/actor"}
+          }
+        }
+      ]
+    },
+    "progress": {"type": "string", "maxLength": 500},
+    "usage": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "prompt_tokens", "completion_tokens", "total_tokens", "cost_usd"],
+          "properties": {
+            "provider": {"const": "openrouter"},
+            "prompt_tokens": {"type": ["integer", "null"], "minimum": 0},
+            "completion_tokens": {"type": ["integer", "null"], "minimum": 0},
+            "total_tokens": {"type": ["integer", "null"], "minimum": 0},
+            "cost_usd": {"type": ["number", "null"], "minimum": 0}
+          }
+        }
+      ]
+    },
+    "created_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/timestamp"}
+  }
+}

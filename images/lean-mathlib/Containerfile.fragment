@@ -1,0 +1,24 @@
+USER root
+ADD --checksum=sha256:6e8cdcc8c86103acd4fc14649eac62ff2037108389074a7b167567af33c32245 \
+    https://snapshot.ubuntu.com/ubuntu/20261006T000000Z/pool/main/c/ca-certificates/ca-certificates_20260601~22.04.1_all.deb /tmp/reasoning-ca-certificates.deb
+RUN dpkg -i /tmp/reasoning-ca-certificates.deb && rm /tmp/reasoning-ca-certificates.deb
+ADD --checksum=sha256:58274ab9ab85211e49cfa88eb84f17dee5e2d62623893549eef076ef9472103d \
+    https://codeload.github.com/leanprover-community/mathlib4/tar.gz/f897ebcf72cd16f89ab4577d0c826cd14afaafc7 /tmp/reasoning-mathlib.tar.gz
+COPY images/lean-mathlib/inputs.json /usr/share/reasoning/lean-mathlib-inputs.json
+COPY images/lean-mathlib/install.py images/lean-mathlib/project.py images/lean-mathlib/Audit.lean /opt/reasoning/
+RUN mkdir -p /opt/mathlib \
+    && tar -xzf /tmp/reasoning-mathlib.tar.gz -C /opt/mathlib --strip-components=1 \
+    && rm /tmp/reasoning-mathlib.tar.gz \
+    && sage -python /opt/reasoning/install.py \
+    && /opt/lean/bin/lean --run /opt/reasoning/Audit.lean --help \
+    && chmod -R a+rX /opt/mathlib \
+    && sage -python /opt/reasoning/metadata.py \
+         --lock /usr/share/reasoning/inputs.json \
+         --source-revision "$SOURCE_REVISION" --build-timestamp "$BUILD_TIMESTAMP" \
+         --mathlib-lock /usr/share/reasoning/lean-mathlib-inputs.json \
+         --capabilities /etc/reasoning/capabilities.json \
+         --sbom /usr/share/reasoning/sbom.spdx.json
+COPY images/lean-mathlib/runtime/ /opt/reasoning/bin/
+RUN chmod 0755 /opt/reasoning/bin/lean
+LABEL org.opencontainers.image.title="Reasoning Lean and mathlib"
+USER 10002:10002

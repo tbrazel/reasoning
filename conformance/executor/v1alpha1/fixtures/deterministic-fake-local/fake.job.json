@@ -1,0 +1,67 @@
+{
+  "schema_id": "reasoning.executor.job-spec",
+  "schema_version": "1.0.0-alpha.1",
+  "job_id": "job_fixture_fake_001",
+  "actor": {"type": "user", "id": "user_fixture"},
+  "tenant_id": "tenant_fixture",
+  "project_id": "project_fixture",
+  "run_id": "run_fixture_001",
+  "step_id": "step_compute_001",
+  "idempotency_key": "fixture-fake-000000000001",
+  "submitted_at": "2026-09-01T00:00:00Z",
+  "executor": {
+    "adapter_id": "reasoning-fake",
+    "adapter_version": "1.0.0-alpha.1",
+    "target_kind": "fake",
+    "target_id": "fixture"
+  },
+  "image": {
+    "repository": "reasoning/fixture",
+    "digest": "sha256:62983131038d7ade85e02303e2f9c7b698388d5eea85d6dd93633946d7f0199d",
+    "capabilities_digest": "sha256:18c33428a10b4da319739606fd6d83f96a1fec53087ba4d7c18483eafcd66883",
+    "attestation_digest": "sha256:7cc686d04fda9562a7bfe495d60fc0c27f561bc27b4f7ce0df24119c1d1c8a47"
+  },
+  "command": {
+    "argv": ["python3", "-c", "from pathlib import Path; Path('/outputs/result.json').write_text('{\"answer\":42}\\n')"],
+    "working_directory": "/workspace"
+  },
+  "inputs": [],
+  "resources": {
+    "cpu": 1,
+    "memory_bytes": 268435456,
+    "disk_bytes": 1073741824,
+    "pids": 64,
+    "wall_time_seconds": 30,
+    "artifact_bytes": 1048576
+  },
+  "deadline": "2099-01-01T00:05:00Z",
+  "cancellation": {"mode": "graceful_then_kill", "grace_period_seconds": 5},
+  "network_policy": {"mode": "denied", "allowed_destinations": []},
+  "outputs": [
+    {
+      "name": "result",
+      "path": "/outputs/result.json",
+      "media_type": "application/json",
+      "required": true,
+      "max_bytes": 1048576
+    }
+  ],
+  "log_policy": {"capture_stdout": true, "capture_stderr": true, "max_bytes": 1048576},
+  "workload_identity": {
+    "audience": "reasoning-fixture-artifacts",
+    "credential_reference": "fixture://workload/fake-001",
+    "expires_at": "2099-01-01T00:10:00Z"
+  },
+  "provenance_required": [
+    "executor",
+    "image",
+    "capabilities",
+    "components",
+    "inputs",
+    "outputs",
+    "resource_usage",
+    "network_policy",
+    "timestamps",
+    "outcome"
+  ]
+}

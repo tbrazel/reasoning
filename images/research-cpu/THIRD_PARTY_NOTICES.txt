@@ -1,0 +1,55 @@
+Reasoning research-cpu component notice
+
+Copyright 2026 Benjamin Antieau and Deven Manam applies to the first-party
+recipe, wrappers, and evidence tooling, under Apache-2.0. It does not replace
+any upstream copyright or license. The aggregate container is NOT licensed
+solely under Apache-2.0.
+
+SageMath 10.6 and its distribution: GPL-3.0 and separately licensed components.
+https://doc.sagemath.org/html/en/reference/history_and_license/index.html
+https://github.com/sagemath/sage/tree/10.6
+The pinned Sage image retains its installed license notices and components.
+GAP 4.14.0: GPL-2.0-or-later; https://www.gap-system.org/
+PARI/GP 2.17.1: GPL-2.0-or-later; https://pari.math.u-bordeaux.fr/
+Python 3.12.5: PSF-2.0 and separately licensed bundled components;
+https://www.python.org/downloads/release/python-3125/
+
+Julia 1.10.11 source: MIT; its binary distribution includes separately licensed
+libraries, including GPL libraries. Do not describe the complete binary as MIT.
+https://docs.julialang.org/en/v1/devdocs/build/distributing/
+https://github.com/JuliaLang/julia/tree/v1.10.11
+The full extracted Julia distribution, including LICENSE.md and shared-library
+notices, is retained under /opt/julia.
+
+Lean 4.24.0: Apache-2.0 and separately licensed bundled components.
+https://github.com/leanprover/lean4/tree/v4.24.0
+The full extracted toolchain, including its upstream notices, is retained under
+/opt/lean. Core Lean is installed; mathlib is not installed.
+
+Noether 0.3.1 default CPU wheel: MIT and separately licensed dependencies.
+Source commit ca8fc50f3d9a902a827fbd558dba138ad7bf0f8f.
+https://github.com/tertius-ai/noether
+The upstream distribution name is tertius-noether. Its wheel retains upstream
+copyrights, MIT license, native notices, license texts and native/Rust dependency
+inventories in its installed dist-info directory. FLINT 3.6.0, GMP 6.3.0 and
+MPFR 4.2.2 are dynamically bundled under LGPL-3.0-or-later. Convey their exact
+sources, patches, build scripts, notices and relinking information. Optional
+GPL subprocess bridges and MPI are excluded from this default wheel profile.
+The aggregate Sage/Julia container still contains separately licensed GPL
+components. Rust/uv/manylinux build tools are not installed in the runtime.
+
+Compiler-provided Rust 1.94.0 standard-library/runtime code is separate from the
+wheel's Cargo dependency inventory. Exact release COPYRIGHT-library.html and
+MIT/Apache license texts are retained under /usr/share/reasoning/licenses/rust-1.94.0,
+copied from the pinned compiler image and checked against the official Rust
+compiler release bytes. The copyright notice includes standard-library
+third-party notices. The SPDX compiler-runtime record preserves the compiler
+pin and source/notice inputs; it does not assert a reviewed static-link closure.
+
+The installed SPDX inventory covers observed OS/Python packages and pinned
+runtime distributions; NOASSERTION is an unaudited license, not permission to
+redistribute. inputs.json records immutable input digests. Before publishing a
+binary image, review the complete installed dependency closure and retain and
+convey the corresponding sources, patches, build scripts, license texts, and
+any required relinking/installation information alongside the binary release.
+Upstream source links alone are not a completed corresponding-source bundle.

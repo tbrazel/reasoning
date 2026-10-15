@@ -1,0 +1,54 @@
+{
+  "schema_id": "reasoning.executor.job-result",
+  "schema_version": "1.0.0-alpha.1",
+  "job_id": "job_fixture_local_001",
+  "outcome": "succeeded",
+  "artifacts": [
+    {
+      "schema_id": "reasoning.executor.artifact",
+      "schema_version": "1.0.0-alpha.1",
+      "artifact_id": "artifact_local_result_001",
+      "job_id": "job_fixture_local_001",
+      "name": "result",
+      "kind": "output",
+      "media_type": "application/json",
+      "size_bytes": 14,
+      "digest": "sha256:7df4c3a5d2d577e3d08a941a2c77ba83defcee03618320b2e3643854336df3e4",
+      "created_at": "2026-09-01T00:00:03Z",
+      "provenance_id": "provenance_local_001"
+    }
+  ],
+  "provenance": {
+    "schema_id": "reasoning.executor.provenance",
+    "schema_version": "1.0.0-alpha.1",
+    "provenance_id": "provenance_local_001",
+    "job_id": "job_fixture_local_001",
+    "executor": {
+      "adapter_id": "reasoning-local",
+      "adapter_version": "1.0.0-alpha.1",
+      "target_kind": "local",
+      "target_id": "fixture"
+    },
+    "environment": {
+      "image_digest": "sha256:62983131038d7ade85e02303e2f9c7b698388d5eea85d6dd93633946d7f0199d",
+      "capabilities_digest": "sha256:18c33428a10b4da319739606fd6d83f96a1fec53087ba4d7c18483eafcd66883",
+      "attestation_digest": "sha256:7cc686d04fda9562a7bfe495d60fc0c27f561bc27b4f7ce0df24119c1d1c8a47",
+      "runner_version": "1.0.0-alpha.1"
+    },
+    "components": [{"name": "fixture-runtime", "version": "1"}],
+    "input_digests": [],
+    "output_digests": ["sha256:7df4c3a5d2d577e3d08a941a2c77ba83defcee03618320b2e3643854336df3e4"],
+    "resource_usage": {
+      "cpu_seconds": 0.01,
+      "peak_memory_bytes": 1048576,
+      "wall_time_seconds": 2.0,
+      "artifact_bytes": 14
+    },
+    "network_policy": {"mode": "denied", "allowed_destinations": []},
+    "started_at": "2026-09-01T00:00:02Z",
+    "finished_at": "2026-09-01T00:00:04Z",
+    "outcome": "succeeded"
+  },
+  "error": null,
+  "completed_at": "2026-09-01T00:00:04Z"
+}

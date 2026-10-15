@@ -1,0 +1,17 @@
+{
+  "canonicalization": "RFC 8785 JSON Canonicalization Scheme",
+  "encoding": "UTF-8",
+  "hash_algorithm": "SHA-256",
+  "cases": [
+    {
+      "id": "empty-usage-collection",
+      "value": [],
+      "digest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "pre-dispatch-zero-evidence-summary",
+      "value": {"amount": "0", "dispatches": [], "usage": []},
+      "digest": "sha256:eca9a6afa0c79eab90dcefbc5cbccc473fb1e3b77a7545c89c1fdbfba388bfdd"
+    }
+  ]
+}

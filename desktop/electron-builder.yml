@@ -1,0 +1,38 @@
+appId: org.reasoning.desktop
+productName: Reasoning
+asar: true
+npmRebuild: false
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - src/main.mjs
+  - src/organization-host.mjs
+  - src/server-connection.mjs
+  - src/connection-preload.cjs
+  - src/connection/**/*
+  - package.json
+extraResources:
+  - from: assets/icon.png
+    to: icon.png
+  - from: ../LICENSE
+    to: licenses/Apache-2.0.txt
+  - from: ../NOTICE
+    to: licenses/NOTICE.txt
+mac:
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  target:
+    - dmg
+    - zip
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+linux:
+  category: Education
+  executableName: reasoning
+  icon: assets/icon.png
+  maintainer: Benjamin Antieau and Deven Manam
+  synopsis: Organization chat and reasoning workflows
+  target:
+    - AppImage
+    - deb
+  artifactName: "${productName}-${version}-${arch}.${ext}"

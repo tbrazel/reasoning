@@ -1,0 +1,232 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "Reasoning Cloud Execution API",
+    "version": "1.0.0-alpha.1",
+    "description": "Durable computation submission, observation, cancellation, and artifact retrieval. Authentication and billing are intentionally outside this contract version."
+  },
+  "servers": [
+    {"url": "https://api.example.org", "description": "Reasoning Cloud"}
+  ],
+  "paths": {
+    "/v1/jobs": {
+      "post": {
+        "operationId": "submitJob",
+        "summary": "Persist and enqueue an immutable execution job",
+        "description": "The server returns 202 only after the job and initial queued event are durably committed. The Idempotency-Key header must equal the job specification idempotency_key.",
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {"schema": {"$ref": "#/components/schemas/JobSpec"}}
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The job was durably accepted, or the existing job for the same idempotency key was returned.",
+            "content": {
+              "application/json": {"schema": {"$ref": "#/components/schemas/JobStatus"}}
+            }
+          },
+          "400": {"$ref": "#/components/responses/ContractError"},
+          "409": {"$ref": "#/components/responses/ContractError"}
+        }
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "Read the durable job projection",
+        "parameters": [
+          {"$ref": "#/components/parameters/JobId"}
+        ],
+        "responses": {
+          "200": {
+            "description": "Current durable job projection.",
+            "content": {
+              "application/json": {"schema": {"$ref": "#/components/schemas/JobStatus"}}
+            }
+          },
+          "404": {"$ref": "#/components/responses/ContractError"}
+        }
+      }
+    },
+    "/v1/jobs/{job_id}/events": {
+      "get": {
+        "operationId": "listJobEvents",
+        "summary": "Replay job events after an opaque cursor",
+        "description": "The after cursor is exclusive. Omitting it begins at the earliest retained event. Delivery is at least once and clients deduplicate by event_id.",
+        "parameters": [
+          {"$ref": "#/components/parameters/JobId"},
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor returned by a prior event or page.",
+            "schema": {"type": "string", "minLength": 1, "maxLength": 2048}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A job-local ordered page of replayable events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["events", "next_cursor", "complete"],
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/JobEvent"}
+                    },
+                    "next_cursor": {
+                      "oneOf": [
+                        {"type": "string", "minLength": 1, "maxLength": 2048},
+                        {"type": "null"}
+                      ]
+                    },
+                    "complete": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/ContractError"},
+          "410": {
+            "description": "The requested cursor is outside the declared retention lifetime.",
+            "content": {
+              "application/json": {"schema": {"$ref": "#/components/schemas/ExecutorError"}}
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}:cancel": {
+      "post": {
+        "operationId": "cancelJob",
+        "summary": "Durably request cancellation",
+        "description": "A successful request records cancellation intent; the job is not terminal until a job.cancelled event is committed. The Idempotency-Key is scoped to the authenticated stable actor type and id, tenant, and project, and it binds one job. Retrying the same key for that job returns the existing durable request; reusing it for another job is a conflict. If completion races cancellation, the first durably committed terminal transition wins.",
+        "parameters": [
+          {"$ref": "#/components/parameters/JobId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "202": {
+            "description": "Cancellation was durably requested.",
+            "content": {
+              "application/json": {"schema": {"$ref": "#/components/schemas/JobStatus"}}
+            }
+          },
+          "404": {"$ref": "#/components/responses/ContractError"},
+          "409": {"$ref": "#/components/responses/ContractError"}
+        }
+      }
+    },
+    "/v1/artifacts/{artifact_id}": {
+      "get": {
+        "operationId": "downloadArtifact",
+        "summary": "Download immutable artifact bytes",
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "pattern": "^artifact_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact bytes. The digest and media type are discovered from the committed artifact event or job result and verified by the client.",
+            "headers": {
+              "X-Reasoning-Artifact-Digest": {
+                "required": true,
+                "schema": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+              }
+            },
+            "content": {
+              "application/octet-stream": {"schema": {"type": "string", "format": "binary"}}
+            }
+          },
+          "404": {"$ref": "#/components/responses/ContractError"}
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "operationId": "getExecutionCapabilities",
+        "summary": "Discover supported public execution-contract versions",
+        "responses": {
+          "200": {
+            "description": "Versions and target kinds currently accepted by this deployment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["schema_id", "schema_version", "executor_contract_versions", "target_kinds"],
+                  "properties": {
+                    "schema_id": {"const": "reasoning.cloud.execution-capabilities"},
+                    "schema_version": {"const": "1.0.0-alpha.1"},
+                    "executor_contract_versions": {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {"type": "string", "minLength": 1}
+                    },
+                    "target_kinds": {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": {"enum": ["fake", "local", "modal", "aws"]}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "JobId": {
+        "name": "job_id",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string", "pattern": "^job_[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {"type": "string", "minLength": 16, "maxLength": 255}
+      }
+    },
+    "schemas": {
+      "JobSpec": {"$ref": "../../executor/v1alpha1/job-spec.schema.json"},
+      "JobStatus": {"$ref": "../../executor/v1alpha1/job-status.schema.json"},
+      "JobEvent": {"$ref": "../../executor/v1alpha1/job-event.schema.json"},
+      "Artifact": {"$ref": "../../executor/v1alpha1/artifact.schema.json"},
+      "ExecutorError": {"$ref": "../../executor/v1alpha1/error.schema.json"}
+    },
+    "responses": {
+      "ContractError": {
+        "description": "The request failed validation, policy, lookup, or conflict checks.",
+        "content": {
+          "application/json": {"schema": {"$ref": "#/components/schemas/ExecutorError"}}
+        }
+      }
+    }
+  }
+}

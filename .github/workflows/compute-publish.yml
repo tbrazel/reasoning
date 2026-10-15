@@ -1,0 +1,132 @@
+name: Signed compute image publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        options: [research-cpu, lean-mathlib]
+        required: true
+      source_revision:
+        description: Exact original recipe revision encoded in the signed retained candidate
+        type: string
+        required: true
+      candidate_run_id:
+        description: Successful manual Compute image acceptance run retaining this exact candidate
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+  packages: write
+
+concurrency:
+  group: compute-publish-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    environment: compute-publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tooling
+      - name: Validate exact source selection
+        env:
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+        run: |
+          [[ "$SOURCE_REVISION" =~ ^[a-f0-9]{40}$|^[a-f0-9]{64}$ ]]
+      - name: Prepare dedicated runner OCI transport
+        working-directory: tooling
+        run: |
+          test "$GITHUB_ACTIONS" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          sudo install -m 0644 .github/ci/apt-network.conf /etc/apt/apt.conf.d/99-reasoning-network
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.11.16'
+      - name: Check signed provenance and anonymous source delivery
+        working-directory: tooling
+        env:
+          PROFILE: ${{ inputs.profile }}
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/reasoning-publication"
+          uv sync --locked
+          uv run --no-sync python -m reasoning_ledger.image_publication \
+            --fetch-source-only --recipe-from-bundle \
+            --source-root "$RUNNER_TEMP/reasoning-publication/recipe" --profile "$PROFILE" \
+            --audit "images/publication/$PROFILE/$SOURCE_REVISION/source-review.json" \
+            --signature "images/publication/$PROFILE/$SOURCE_REVISION/source-review.ed25519" \
+            --trusted-key images/publication/review-key.pem \
+            --source-bundle "$RUNNER_TEMP/reasoning-publication/sources.tar" \
+            --output "$RUNNER_TEMP/reasoning-publication/published"
+      - name: Download original reviewed candidate without rebuilding
+        working-directory: tooling
+        env:
+          PROFILE: ${{ inputs.profile }}
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID" \
+            > "$RUNNER_TEMP/reasoning-publication/candidate-run.json"
+          uv run --no-sync python -m reasoning_ledger.image_candidate \
+            --run "$RUNNER_TEMP/reasoning-publication/candidate-run.json" --source-revision "$SOURCE_REVISION"
+          gh run download "$CANDIDATE_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "candidate-$SOURCE_REVISION-$PROFILE" --dir "$RUNNER_TEMP/reasoning-publication/candidate"
+      - name: Publish only the signed reviewed digest and accept anonymous execution
+        working-directory: tooling
+        env:
+          PROFILE: ${{ inputs.profile }}
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+          REASONING_IMAGE_REGISTRY_USER: ${{ github.actor }}
+          REASONING_IMAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          uv run --no-sync python -m reasoning_ledger.image_publication \
+            --source-root "$RUNNER_TEMP/reasoning-publication/recipe" --profile "$PROFILE" \
+            --repository "ghcr.io/${GITHUB_REPOSITORY,,}/$PROFILE" \
+            --archive "$RUNNER_TEMP/reasoning-publication/candidate/$PROFILE.oci.tar" \
+            --source-bundle "$RUNNER_TEMP/reasoning-publication/sources.tar" \
+            --audit "images/publication/$PROFILE/$SOURCE_REVISION/source-review.json" \
+            --signature "images/publication/$PROFILE/$SOURCE_REVISION/source-review.ed25519" \
+            --trusted-key images/publication/review-key.pem \
+            --output "$RUNNER_TEMP/reasoning-publication/published"
+      - name: Bind public receipt to this exact workflow dispatch
+        working-directory: tooling
+        env:
+          PROFILE: ${{ inputs.profile }}
+          SOURCE_REVISION: ${{ inputs.source_revision }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          uv run --no-sync python -m reasoning_ledger.image_hosted request \
+            --output "$RUNNER_TEMP/reasoning-publication/published/workflow-request.json"
+      - name: Retain only public completion evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: published-${{ inputs.profile }}-${{ inputs.source_revision }}
+          path: |
+            ${{ runner.temp }}/reasoning-publication/published/compute-images.json
+            ${{ runner.temp }}/reasoning-publication/published/publication.json
+            ${{ runner.temp }}/reasoning-publication/published/source-review.json
+            ${{ runner.temp }}/reasoning-publication/published/source-review.ed25519
+            ${{ runner.temp }}/reasoning-publication/published/public-acceptance.json
+            ${{ runner.temp }}/reasoning-publication/published/workflow-request.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retain non-secret publication intent after a partial failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: publication-intent-${{ inputs.profile }}-${{ inputs.source_revision }}
+          path: ${{ runner.temp }}/reasoning-publication/published/publication-intent.json
+          if-no-files-found: ignore
+          retention-days: 90

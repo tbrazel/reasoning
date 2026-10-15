@@ -1,0 +1,102 @@
+{
+  "schema_id": "reasoning.platform.pricing",
+  "schema_version": "1.0.0-alpha.1",
+  "pricing_lifecycle_id": "pricing_compute_released",
+  "operation": {
+    "operation_id": "operation_compute_released",
+    "kind": "compute",
+    "actor": {"type": "user", "id": "user_alice"},
+    "tenant_id": "tenant_alpha",
+    "project_id": "project_local_algebra",
+    "idempotency_key": "compute-release-fixture-001",
+    "request_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "route_plan_id": "route_plan_compute_released"
+  },
+  "quote": {
+    "quote_id": "quote_compute_released",
+    "sequence": 1,
+    "issued_at": "2026-09-01T19:00:00Z",
+    "expires_at": "2026-09-01T19:10:00Z",
+    "currency": "USD",
+    "dimensions": [
+      {
+        "component_id": "price_component_release_vcpu",
+        "kind": "compute",
+        "meter": "vcpu_seconds",
+        "maximum_quantity": "600",
+        "unit_price": "0.000500",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      },
+      {
+        "component_id": "price_component_release_memory",
+        "kind": "compute",
+        "meter": "memory_gib_seconds",
+        "maximum_quantity": "3000",
+        "unit_price": "0.000100",
+        "maximum_amount": "0.300000",
+        "basis": "operator_rate"
+      }
+    ],
+    "maximum_amount": "0.600000",
+    "assumptions": ["The reserved compute operation may release without billable usage."],
+    "catalog_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  },
+  "reservation": {
+    "reservation_id": "reservation_compute_released",
+    "sequence": 2,
+    "quote_id": "quote_compute_released",
+    "state": "reserved",
+    "reserved_at": "2026-09-01T19:00:30Z",
+    "currency": "USD",
+    "reserved_amount": "0.600000",
+    "funding": "free_quota",
+    "persisted_with_operation": true
+  },
+  "dispatches": [
+    {
+      "dispatch_id": "dispatch_compute_released",
+      "sequence": 3,
+      "kind": "compute",
+      "reservation_id": "reservation_compute_released",
+      "dispatched_at": "2026-09-01T19:01:00Z",
+      "job_id": "job_compute_released",
+      "executor_contract_version": "1.0.0-alpha.1"
+    }
+  ],
+  "usage": [
+    {
+      "usage_id": "usage_compute_released",
+      "sequence": 4,
+      "kind": "compute",
+      "source": "reasoning_calculated",
+      "dimensions": [
+        {"meter": "vcpu_seconds", "quantity": "0"},
+        {"meter": "memory_gib_seconds", "quantity": "0"}
+      ],
+      "amount": "0",
+      "currency": "USD",
+      "provenance": {
+        "target_id": "target_local_container",
+        "job_id": "job_compute_released",
+        "image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capabilities_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "attestation_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "executor_provenance_id": "provenance_compute_released"
+      }
+    }
+  ],
+  "settlement": {
+    "settlement_id": "settlement_compute_released",
+    "sequence": 5,
+    "state": "released",
+    "reservation_id": "reservation_compute_released",
+    "settled_at": "2026-09-01T19:02:00Z",
+    "currency": "USD",
+    "actual_amount": "0",
+    "released_amount": "0.600000",
+    "usage_digest": "sha256:77ec29d599ce5d16f4e6ec87443e58d5855de009249773019c3e219aaabe8282",
+    "actual_provenance_complete": true,
+    "atomic": true
+  }
+}

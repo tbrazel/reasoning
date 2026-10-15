@@ -1,0 +1,244 @@
+name: Source checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-publication:
+    name: Spaces source publication / offline SDK contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.11.16"
+      - run: uv sync --locked --extra test --extra publication
+      - run: uv run --no-sync pytest -q tests/test_public_compute_spaces.py
+
+  backend-shards:
+    name: Deployment fixtures / ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+          cache-suffix: backend
+          cache-dependency-glob: |
+            uv.lock
+            pyproject.toml
+            .python-version
+      - run: uv sync --locked --extra test --extra dev
+      - name: Enable the isolated developer-test sandbox on the disposable runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap apparmor
+          sudo apparmor_parser -r tests/fixtures/developer-bwrap.apparmor
+      - run: uv run --no-sync pytest --deployment --deployment-shard ${{ matrix.shard }}/3 -q --durations=20
+
+  developer-bot:
+    name: Development-box bot test profiles
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.11.16"
+      - run: uv sync --locked --extra test --extra dev
+      - run: npm --prefix web ci --engine-strict --no-audit --no-fund
+      - name: Enable only bubblewrap's user namespace profile
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap apparmor
+          sudo apparmor_parser -r tests/fixtures/developer-bwrap.apparmor
+      - name: Exercise owner approvals and all real offline profiles
+        run: |
+          uv run --no-sync pytest -q tests/test_public_developer_testing.py tests/test_public_bot_developer.py
+          task_test_state=$(mktemp -d)
+          uv run --no-sync python -m reasoning_ledger.server.bot_testing --state-dir "$task_test_state" configure --repository "${{ github.repository }}"
+          for profile in smoke bots knowledge frontend; do
+            uv run --no-sync python -m reasoning_ledger.server.bot_testing --state-dir "$task_test_state" test --profile "$profile" --yes
+          done
+
+  backend:
+    name: Backend deployment gate
+    needs: backend-shards
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: test "${{ needs.backend-shards.result }}" = success
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+          cache-suffix: backend
+      - run: uv sync --locked --extra test --extra dev
+      - run: uv run --no-sync ruff check src tests
+      - run: uv run --no-sync pytest -q tests/test_documentation.py
+      - run: uvx reuse lint
+      - run: uv run --no-sync pytest -q tests/test_source_release.py
+
+  upgrade-recovery-shards:
+    name: Release safety / ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: migration-and-preparation
+            tests: >-
+              tests/test_public_offline_migration.py tests/test_public_host_upgrade.py tests/test_public_server_changes.py
+          - suite: operator-workflow
+            tests: tests/test_public_setup_upgrade.py tests/test_public_operator_sync.py
+          - suite: activation-and-rollback
+            tests: >-
+              tests/test_public_host_activation.py tests/test_public_host_rollback.py tests/test_public_host_rollback_activation.py
+          - suite: recovery
+            tests: tests/test_public_host_recovery.py tests/test_public_host_recovery_activation.py
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+          cache-suffix: upgrade-recovery
+      - run: uv sync --locked --extra test --extra dev
+      - name: Exercise actual offline migrations and guarded host changes
+        run: >-
+          uv run --no-sync pytest -q --durations=10 ${{ matrix.tests }}
+
+  upgrade-recovery:
+    name: Release upgrade and recovery
+    needs: upgrade-recovery-shards
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - run: test "${{ needs.upgrade-recovery-shards.result }}" = success
+
+  postgres-shards:
+    name: PostgreSQL / ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: organization-storage
+            tests: tests/test_public_postgres.py
+          - suite: leases-and-project-compute
+            tests: tests/test_public_work_jobs.py tests/test_public_project_compute.py
+          - suite: topics-and-knowledge
+            tests: >-
+              tests/test_public_postgres_feedback.py tests/test_public_postgres_navigation.py tests/test_public_postgres_media.py
+              tests/test_public_postgres_bot_integration.py
+          - suite: tools-and-context
+            tests: >-
+              tests/test_public_work_context.py tests/test_public_work_tools.py
+              tests/test_public_work_sources.py tests/test_public_work_workspaces.py tests/test_public_work_compute.py
+              tests/test_public_work_overview.py
+          - suite: runtime-and-controllers
+            tests: >-
+              tests/test_public_work_compaction.py tests/test_public_work_provider.py
+              tests/test_public_work_worker.py tests/test_public_work_controllers.py
+    services:
+      postgres:
+        # Docker Official Images on ECR Public, pinned to the verified index.
+        image: public.ecr.aws/docker/library/postgres:16.15-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_USER: reasoning_test
+          POSTGRES_PASSWORD: reasoning_test
+          POSTGRES_DB: reasoning_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reasoning_test -d reasoning_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      REASONING_TEST_POSTGRES_DSN: host=127.0.0.1 port=5432 dbname=reasoning_test user=reasoning_test password=reasoning_test sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          version: "0.11.16"
+          cache-suffix: postgres
+      - run: uv sync --locked --extra test --extra dev --extra postgres
+      - run: uv run --no-sync python -c 'import psycopg'
+      - run: uv run --no-sync pytest ${{ matrix.tests }} --skip-sqlite-params -q --durations=10
+
+  postgres:
+    name: PostgreSQL organization parity
+    needs: postgres-shards
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - run: test "${{ needs.postgres-shards.result }}" = success
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm --prefix web ci --no-audit --no-fund
+      - run: npm --prefix web test
+      - run: npm --prefix web run build
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-suffix: development-browser
+          version: "0.11.16"
+      - run: uv sync --locked --extra dev
+      - name: Bound runner package-mirror waits
+        run: sudo install -m 0644 .github/ci/apt-network.conf /etc/apt/apt.conf.d/99-reasoning-network
+      - run: npm --prefix web exec -- playwright install --with-deps chromium
+      - run: npm --prefix web run test:dev
+      - run: npm --prefix web run test:topic-agents
+      - name: Exercise ledger, blog, and responsive navigation
+        run: node --test --test-concurrency=1 web/tests/public-ledger.browser.mjs web/tests/public-blog.browser.mjs web/tests/navigation.browser.mjs web/tests/topic-media.browser.mjs web/tests/bot-controls.browser.mjs web/tests/bot-approvals.browser.mjs web/tests/model-selection.browser.mjs web/tests/chat-polish.browser.mjs web/tests/invitations.browser.mjs
+
+  desktop:
+    name: Desktop contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm --prefix desktop ci --no-audit --no-fund
+      - run: npm --prefix desktop test

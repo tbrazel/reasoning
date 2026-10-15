@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "id": "member-digest-substitution",
+      "operation": "replace_digest",
+      "member_path": "contracts/platform/v1alpha2/pricing.schema.json",
+      "replacement": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "id": "member-removal",
+      "operation": "remove_member",
+      "member_path": "conformance/platform/v1alpha2/fixtures/negative/cases.json"
+    },
+    {
+      "id": "unexpected-member",
+      "operation": "add_member",
+      "member_path": "contracts/platform/v1alpha2/not-a-contract.schema.json",
+      "replacement": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

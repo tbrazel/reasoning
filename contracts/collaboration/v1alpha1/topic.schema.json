@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/collaboration/v1alpha1/topic.schema.json",
+  "title": "Reasoning Shared Topic",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id", "schema_version", "organization_id", "workspace_id",
+    "topic_id", "title", "state", "created_by", "created_at", "updated_at"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.collaboration.topic"},
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "organization_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "workspace_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "topic_id": {"$ref": "common.schema.json#/$defs/stableId"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 160},
+    "state": {"enum": ["open", "resolved", "archived"]},
+    "created_by": {"$ref": "common.schema.json#/$defs/actor"},
+    "created_at": {"$ref": "common.schema.json#/$defs/timestamp"},
+    "updated_at": {"$ref": "common.schema.json#/$defs/timestamp"}
+  }
+}

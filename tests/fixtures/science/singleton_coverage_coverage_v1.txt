@@ -1,0 +1,16 @@
+REASONING_THREE_BLOCK_SINGLETON_COVERAGE_V1
+normalized_shape_count=4420
+nonconsecutive_zero_count=12400
+nonconsecutive_zero_checksum=4071796996668289174
+consecutive_zero_count=4100
+consecutive_zero_checksum=8483181085099946785
+b_zero_candidate_count=4200
+nonconsecutive_candidate_count=2100
+consecutive_candidate_count=2100
+candidate_point_evaluation_count=34650000
+selected_candidate_count=2
+selection_checksum=14663480442488609147
+final_uncovered_count=0
+selected_candidates=9,0,2,19,18,0;7,0,1,2,23,1
+remaining_counts=4100,0
+REASONING_END

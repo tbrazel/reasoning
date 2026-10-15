@@ -1,0 +1,48 @@
+{
+  "schema_id": "reasoning.executor.image-capabilities",
+  "schema_version": "1.0.0-alpha.1",
+  "manifest_scope": "installed",
+  "image_name": "reasoning/fixture",
+  "build_timestamp": "2026-09-01T00:00:00Z",
+  "source_revision": "1111111111111111111111111111111111111111",
+  "platform": {"os": "linux", "architecture": "amd64"},
+  "runtimes": [{"name": "python", "version": "3.11.9"}],
+  "tools": [
+    {
+      "name": "fixture-writer",
+      "version": "1",
+      "entry_points": ["python3"],
+      "operations": ["write-json"]
+    }
+  ],
+  "compatibility": {"executor_contract": "1.0.0-alpha.1", "runner": ">=1.0.0-alpha.1"},
+  "paths": {
+    "working": "/workspace",
+    "input": "/inputs",
+    "output": "/outputs",
+    "cache": "/cache",
+    "temporary": "/tmp"
+  },
+  "resource_limits": {
+    "defaults": {
+      "cpu": 1,
+      "memory_bytes": 268435456,
+      "disk_bytes": 1073741824,
+      "pids": 64,
+      "wall_time_seconds": 30,
+      "artifact_bytes": 1048576
+    },
+    "maximums": {
+      "cpu": 2,
+      "memory_bytes": 536870912,
+      "disk_bytes": 2147483648,
+      "pids": 128,
+      "wall_time_seconds": 60,
+      "artifact_bytes": 2097152
+    }
+  },
+  "network": {"supported_modes": ["denied"], "possible_destinations": []},
+  "devices": [],
+  "restrictions": ["fixture only"],
+  "sbom": {"format": "spdx-json", "path": "/usr/share/reasoning/sbom.spdx.json"}
+}

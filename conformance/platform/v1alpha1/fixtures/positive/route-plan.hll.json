@@ -1,0 +1,42 @@
+{
+  "schema_id": "reasoning.platform.route-plan",
+  "schema_version": "1.0.0-alpha.1",
+  "route_plan_id": "route_plan_hll",
+  "operation_id": "operation_hybrid_matrix",
+  "actor": {"type": "user", "id": "user_alice"},
+  "tenant_id": "tenant_alpha",
+  "persistence": {
+    "location": "local",
+    "project_bundle_id": "project_bundle_local_algebra_001",
+    "project_id": "project_local_algebra",
+    "project_revision_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "transfer_manifest_id": "transfer_hybrid_001"
+  },
+  "harness": {
+    "harness_id": "reasoning-cloud",
+    "descriptor_digest": "sha256:9cbc816c5e7ea151655dd2bb93c71a2b574a6724506449e8cc139a5c885a2c58",
+    "location": "hosted"
+  },
+  "inference": {
+    "route_id": "route_local_ollama",
+    "route_digest": "sha256:131ecf6a9cda636f4c3a460d0cdf6552e12733a5fd1ebe72a7173780583b538d",
+    "provider": "provider_local",
+    "model": "local/qwen3",
+    "reasoning_effort": "medium",
+    "location": "local"
+  },
+  "compute": {
+    "target_id": "target_local_container",
+    "target_digest": "sha256:1676ea187b8a5c749ad7b0b00b5f08a8305b1375ab83c89a9b983a1aa5499bf6",
+    "location": "local",
+    "executor_contract_version": "1.0.0-alpha.1",
+    "image": {
+      "repository": "localhost/reasoning/research-cpu",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capabilities_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "attestation_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  },
+  "decision": {"source": "user", "decided_at": "2026-09-01T18:03:00Z", "compatibility": "passed", "policy": "passed"},
+  "pricing_lifecycle_id": "pricing_hybrid_001"
+}

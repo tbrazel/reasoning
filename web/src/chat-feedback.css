@@ -1,0 +1,49 @@
+.chat-message-actions { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+.chat-reactions { display:inline-flex; gap:.15rem; align-items:center; }
+.chat-reactions:has(.chat-reaction-chip) { margin-top:.25rem; }
+.org-message,.org-model-run,.org-comparison-answer { position:relative; isolation:isolate; }
+.org-message > header { padding-right:5.5rem; }
+.org-model-run > summary,.org-comparison-answer > summary { padding-right:4rem; }
+.chat-action-launcher { position:absolute; right:.25rem; top:.25rem; width:1.75rem; min-height:1.75rem; padding:0; display:grid; place-items:center;
+  z-index:1; opacity:0; pointer-events:none; border:0; background:transparent; color:var(--muted); }
+.chat-message-actions .chat-fork-launcher { right:.25rem; }
+.chat-has-copy .chat-fork-launcher { right:2rem; }
+.chat-has-copy .chat-reaction-launcher,.chat-output-actions .chat-reaction-launcher { right:2rem; }
+.chat-has-fork .chat-reaction-launcher { right:2rem; }
+.chat-has-fork.chat-has-copy .chat-reaction-launcher { right:3.75rem; }
+.org-app .chat-copy-launcher { border:0; padding:0; background:transparent; box-shadow:none; }
+.org-app .chat-fork-launcher { border:0; padding:0; background:transparent; box-shadow:none; }
+.org-message.org-message-continuation > header > time { right:5.75rem; top:.25rem; white-space:nowrap; }
+.chat-reaction-launcher,.org-app .chat-reaction-launcher,.org-app .chat-reaction-launcher:hover,.org-app .chat-reaction-launcher:focus-visible {
+  padding:0; border:0; background:transparent; box-shadow:none; font:14px var(--font-mono); white-space:nowrap; overflow-wrap:normal;
+}
+.org-message:hover > .chat-message-actions .chat-action-launcher,
+.org-message:focus-within > .chat-message-actions .chat-action-launcher,
+.org-model-run:hover .chat-action-launcher,.org-model-run:focus-within .chat-action-launcher,
+.org-comparison-answer:hover .chat-action-launcher,.org-comparison-answer:focus-within .chat-action-launcher,
+.chat-action-launcher:focus-visible,.chat-action-launcher[aria-expanded=true] { opacity:1; pointer-events:auto; }
+.chat-action-menu { position:fixed; width:176px; padding:.25rem; z-index:100; border:1px solid var(--border);
+  max-height:calc(100dvh - 16px); overflow-y:auto;
+  border-radius:var(--radius-control); background:var(--surface-raised); color:var(--foreground); box-shadow:var(--shadow-overlay); }
+.chat-action-menu button { width:100%; min-height:2.25rem; display:flex; align-items:center; gap:.5rem; padding:.25rem .5rem; border:0; background:transparent; color:inherit; text-align:left; font-size:.8rem; }
+.chat-action-menu button:hover,.chat-action-menu button:focus-visible { background:var(--accent-dim); }
+.chat-action-menu button[aria-checked=true] { color:var(--teal); }
+.chat-reaction-chip { position:relative; display:inline-flex; align-items:center; gap:.25rem; min-height:1.5rem; padding:.1rem .35rem; font-size:.75rem;
+  border:1px solid var(--border); border-radius:var(--radius-pill); background:transparent; color:var(--muted); }
+.chat-reaction-chip:hover,.chat-reaction-chip[aria-pressed=true] { background:var(--accent-dim); }
+.chat-reaction-chip[aria-pressed=true] { border-color:var(--teal); }
+.chat-reactor-initials { font-size:.65rem; font-weight:500; }
+.chat-reaction-chip:focus-visible::after { content:attr(data-reactors); position:absolute; left:0; bottom:calc(100% + .25rem); min-width:8rem;
+  max-width:15rem; padding:.35rem; background:var(--surface-raised); border:1px solid var(--border); border-radius:var(--radius-control); z-index:2; text-align:left; }
+@media (hover:none) { .chat-action-launcher { opacity:1; pointer-events:auto; min-height:2rem; } }
+.chat-fork { flex-basis:100%; display:flex; flex-wrap:wrap; gap:.35rem; align-items:center; }
+.chat-fork small { flex-basis:100%; }
+.chat-edit,.chat-edit-history { flex-basis:100%; width:100%; }
+.chat-edit { display:flex; flex-wrap:wrap; gap:.35rem; }
+.chat-edit label,.chat-edit small { flex-basis:100%; }
+.chat-edit textarea { width:100%; resize:vertical; }
+.chat-edit-history pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.chat-edited { font-size:.65rem; color:var(--muted); }
+.chat-feedback-table table { width:100%; border-collapse:collapse; font-size:.8rem; }
+.chat-feedback-table th,.chat-feedback-table td { padding:.2rem .4rem; text-align:right; border-bottom:1px solid #8883; }
+.chat-feedback-table th:first-child { text-align:left; overflow-wrap:anywhere; }

@@ -1,0 +1,25 @@
+[Unit]
+Description=Reasoning development workbench
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/src/reasoning
+ExecStartPre=/usr/bin/test -x %h/.local/bin/codex
+ExecStartPre=%h/src/reasoning/.venv/bin/python -c "from reasoning_ledger import sandbox; raise SystemExit(0 if sandbox.available() else 1)"
+ExecStart=%h/src/reasoning/.venv/bin/reasoning-ledger-web
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PORT=9120
+Environment=REASONING_WORKBENCH_ROOT=%h/.local/share/reasoning-dev
+Environment=REASONING_WEB_DIST=%h/src/reasoning/web/dist
+Environment=REASONING_NOETHER_MANIFEST=%h/.local/share/reasoning/noether/v0.1.0-rc-dbf89261/installation.json
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

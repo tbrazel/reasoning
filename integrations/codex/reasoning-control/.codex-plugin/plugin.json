@@ -1,0 +1,22 @@
+{
+  "name": "reasoning-control",
+  "version": "0.1.0",
+  "description": "Operate durable Reasoning research campaigns from Codex",
+  "author": {
+    "name": "Reasoning AI"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Reasoning Control",
+    "shortDescription": "Operate autonomous Reasoning research runs.",
+    "longDescription": "Create and drive durable Reasoning projects, chats, turns, workflows, ledgers, and artifacts without browser interaction.",
+    "developerName": "Reasoning AI",
+    "category": "Productivity",
+    "capabilities": ["Research", "Automation"],
+    "defaultPrompt": [
+      "Start a bounded Reasoning research run and monitor it.",
+      "Inspect my active Reasoning campaigns and evidence."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.reasoning.invalid/executor/v1alpha1/image-attestation.schema.json",
+  "title": "Reasoning Execution Image Attestation",
+  "description": "External signed binding between an immutable OCI image and the capability manifest embedded in it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "image_digest",
+    "capabilities_digest",
+    "sbom_digest",
+    "source_revision",
+    "components",
+    "signed_at",
+    "verification_status",
+    "signature"
+  ],
+  "properties": {
+    "schema_id": {"const": "reasoning.executor.image-attestation"},
+    "schema_version": {"const": "1.0.0-alpha.1"},
+    "image_digest": {"$ref": "#/$defs/digest"},
+    "capabilities_digest": {"$ref": "#/$defs/digest"},
+    "sbom_digest": {"$ref": "#/$defs/digest"},
+    "source_revision": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "source_revision", "digest"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "version": {"type": "string", "minLength": 1},
+          "source_revision": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+          "digest": {"$ref": "#/$defs/digest"}
+        }
+      }
+    },
+    "signed_at": {"type": "string", "format": "date-time"},
+    "verification_status": {"enum": ["unverified_fixture", "verified"]},
+    "signature": {
+      "type": "object",
+      "description": "Ed25519 signature over the RFC 8785/JCS UTF-8 encoding of this object after omitting signature and verification_status. key_id selects the trusted public key; verification_status is verifier-owned metadata and is not signed.",
+      "additionalProperties": false,
+      "required": ["algorithm", "encoding", "key_id", "value"],
+      "properties": {
+        "algorithm": {"const": "ed25519"},
+        "encoding": {"const": "base64"},
+        "key_id": {"type": "string", "pattern": "^ed25519:[A-Za-z0-9._-]{1,128}$"},
+        "value": {"type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$"}
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+  }
+}

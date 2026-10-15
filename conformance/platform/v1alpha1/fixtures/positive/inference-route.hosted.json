@@ -1,0 +1,14 @@
+{
+  "schema_id": "reasoning.platform.inference-route",
+  "schema_version": "1.0.0-alpha.1",
+  "route_id": "route_cloud_openrouter",
+  "display_name": "Reasoning managed inference",
+  "provider": "provider_openrouter",
+  "location": "hosted",
+  "harness_ids": ["codex", "reasoning-cloud"],
+  "model_patterns": ["openai/*", "anthropic/*"],
+  "model_options": ["openai/gpt-5.6", "anthropic/claude-opus-4.1"],
+  "reasoning_efforts": ["none", "low", "medium", "high", "xhigh"],
+  "pricing_catalog_id": "catalog_cloud_models_2026_09_01",
+  "credential_custody": "service_owned"
+}

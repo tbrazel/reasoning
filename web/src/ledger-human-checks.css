@@ -1,0 +1,6 @@
+.ledger-human-checks { border-top: 1px solid var(--border); padding-top: .5rem; margin: .5rem 0; font-size: .8rem; }
+.ledger-human-checks form { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0; }
+.ledger-human-checks input { flex: 1 1 12rem; min-width: 0; }
+.ledger-human-checks small, .ledger-human-checks time { color: var(--muted); }
+.ledger-human-checks p { margin: .2rem 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ledger-human-check-stale { opacity: .7; }

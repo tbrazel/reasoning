@@ -1,0 +1,153 @@
+{
+  "schema_id": "reasoning.platform.alpha1-file-digests",
+  "files": [
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/negative/cases.json",
+      "digest": "sha256:0764ff517361fb2feb1b1bb971cdeac28f57c1fc096c7589477869e823224a09"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/compute-target.hosted.json",
+      "digest": "sha256:08d7acb1ac2efeff532884e1ea09fd5e324313504af003c582902e7832980cb0"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/compute-target.local.json",
+      "digest": "sha256:1676ea187b8a5c749ad7b0b00b5f08a8305b1375ab83c89a9b983a1aa5499bf6"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/harness-provider.hosted.json",
+      "digest": "sha256:9cbc816c5e7ea151655dd2bb93c71a2b574a6724506449e8cc139a5c885a2c58"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/harness-provider.local.json",
+      "digest": "sha256:7cc42bd69c85910110b602aa6fa965e0488f93e267ce39cb05a4a4a6fef9e9f6"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/inference-route.hosted.json",
+      "digest": "sha256:7cce9941428976587bfa02af9dfb285a78a0bd0c3770ad17774922147a8e0b5a"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/inference-route.local.json",
+      "digest": "sha256:131ecf6a9cda636f4c3a460d0cdf6552e12733a5fd1ebe72a7173780583b538d"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/local-harness-connector.json",
+      "digest": "sha256:efb445c4650c2e66269382fec03f83c694652116a2e7676b05a003cad86e0eb6"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/pricing.compute-released.json",
+      "digest": "sha256:24cdc96d43da1a040e1f9b1ea366c15305f3fed0ea1c7ca376cedb1f8c193f3a"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/pricing.hybrid-outcome-unknown.json",
+      "digest": "sha256:6869ea13cac4be0cbc7ebd6b1fa84a4de18c9792a4a73a2f6e5694d000deaea6"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/pricing.hybrid-settled.json",
+      "digest": "sha256:4305c1c1521abcacb37754ac561a67ea99447d572efc546f4a9591e1dc783b3d"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/project-bundle.local-linked.json",
+      "digest": "sha256:5754318ba4475bc8feb6b20923366fcf00774c51b8c8f85cf4e62dc1e2537c73"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/project-bundle.local-unlinked.json",
+      "digest": "sha256:97a92f4feae2300730af335e91a9dde13e0267daad88bfec5b4c46a7a95300e5"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.compute-released.json",
+      "digest": "sha256:35cbaa5564596c27a6aacadbb84bd0c26635e998d51807c3a45fdc710f9ae3c3"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.hhh.json",
+      "digest": "sha256:6f9e5f64561c4fb37622ed26f9337187abfae36663e118382e34e521dde48eff"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.hhl.json",
+      "digest": "sha256:0861ba5b8699aaff17e7f05aa9d2c52534324c5fc156451809a9121e598d57d4"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.hlh.json",
+      "digest": "sha256:cbc8055bd3c0024cac74de54bf86e3191800e48ff3b3e76a892214120d64474b"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.hll.json",
+      "digest": "sha256:98cda930b02f351c66a8f9d8e149ae359d9d5f86b394cf7bc4012ce8323a1346"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.hybrid-outcome-unknown.json",
+      "digest": "sha256:4b38a4f49bd2cb53dbfcbd9b6b33e8bda6dfe86bccaf6a00dc7deed778f35b84"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.lhh.json",
+      "digest": "sha256:d6359545e56aa6a5aa593a2278b96820d43d62a6f043268b5893c0b9916ae511"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.lhl.json",
+      "digest": "sha256:230fb3f4d81abe286114f1105659106254847b5266a575b3fcb51a2370e5c967"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.llh.json",
+      "digest": "sha256:99867da527fc17dd94c6c75c6e344a61e95498b5e47710f8b8b413d63c109180"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/fixtures/positive/route-plan.lll.json",
+      "digest": "sha256:ab2d6d17617158778624df2ed38751383823caddbad0c716e402ec45cf722f9e"
+    },
+    {
+      "path": "conformance/platform/v1alpha1/suite.json",
+      "digest": "sha256:6be456ae79a4e83fa9f0c94db3bb93a9de8320ef78daa1f81ec446c0e60d4be7"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/README.md",
+      "digest": "sha256:918aa92d755aacf8bd3c1c45efd627d00204cb84c7b5d47f19b7cbde24f365e0"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/bundle-manifest.json",
+      "digest": "sha256:e99e593dcaa92db1eb1722404c42aae627c3d7dff641fc2f8e1007f1464c534a"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/common.schema.json",
+      "digest": "sha256:38bcebc6b6b49556ce5a0944632a6a7b68d549b946cafe7f4685bd850b7bc00b"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/compatibility.json",
+      "digest": "sha256:58b07d20762c1277f22a474484421575354d2d6ca29aa9ecee81f49a72a03688"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/compatibility.schema.json",
+      "digest": "sha256:ab15743d4550c10ec0dfc0f625b28a6def7e291b2f13ee683f31c1f8a87dac07"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/compute-target.schema.json",
+      "digest": "sha256:b4083213b7bfe38d2ad70c9f610eb2719a848e97a4f9ac5605f7fb3c4d620999"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/contract-bundle.schema.json",
+      "digest": "sha256:d8563b6225d1d21b5b8642352ee21a0c4d0d48628184681b9441226dea35ec6e"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/harness-provider.schema.json",
+      "digest": "sha256:fcb84b8c5210af7169dc0e30d7109850d99957f297dc8bdd6c8eca91a4fefa84"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/inference-route.schema.json",
+      "digest": "sha256:ccc11fc226a014150b146b9680f6a59e909dca6c12b9dec5485c0c3f3b49e163"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/local-harness-connector.schema.json",
+      "digest": "sha256:3f77d24b83a35cefe22182639662668d4cc9066d1d194253ae46e551aab9edaf"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/pricing.schema.json",
+      "digest": "sha256:60e5f2bbf8e2d7b2bbbb080f8cd44f97af13b125545b3316e08b23dddb9c62af"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/project-bundle.schema.json",
+      "digest": "sha256:0e679436e605c47f25c150ec984618a9c311efa06cec0567a195c1f497d4a63e"
+    },
+    {
+      "path": "contracts/platform/v1alpha1/route-plan.schema.json",
+      "digest": "sha256:56b9e9d105e485600ca45ea2b31e4b4657622adaeb4476cf3b683b7baa0c68b9"
+    }
+  ]
+}

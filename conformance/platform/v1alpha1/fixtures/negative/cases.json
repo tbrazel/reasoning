@@ -1,0 +1,246 @@
+{
+  "schema_id": "reasoning.platform.negative-cases",
+  "schema_version": "1.0.0-alpha.1",
+  "cases": [
+    {
+      "id": "project-link-cannot-appear-without-link-approval",
+      "schema": "project-bundle.schema.json",
+      "base": "positive/project-bundle.local-unlinked.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/linkage", "value": {"state": "linked"}}
+      ]
+    },
+    {
+      "id": "portable-project-export-rejects-secret-fields",
+      "schema": "project-bundle.schema.json",
+      "base": "positive/project-bundle.local-unlinked.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "add", "pointer": "/refresh_token", "value": "must-not-export"}
+      ]
+    },
+    {
+      "id": "project-link-approval-binds-exact-policy",
+      "schema": "project-bundle.schema.json",
+      "base": "positive/project-bundle.local-linked.json",
+      "validation": "project_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/linkage/authorized_data_classes/0", "value": "workflow_records"}
+      ]
+    },
+    {
+      "id": "route-plan-rejects-opaque-backend-selection",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "add", "pointer": "/backend", "value": "magic"}
+      ]
+    },
+    {
+      "id": "prerelease-negotiation-requires-exact-version",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/schema_version", "value": "1.0.0-alpha.2"}
+      ]
+    },
+    {
+      "id": "local-project-hosted-route-requires-transfer-manifest",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "remove", "pointer": "/persistence/transfer_manifest_id"}
+      ]
+    },
+    {
+      "id": "local-harness-hosted-compute-requires-connector",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "remove", "pointer": "/compute/connector_grant_id"}
+      ]
+    },
+    {
+      "id": "hosted-route-rejects-unrelated-transfer-id",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "route_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/persistence/transfer_manifest_id", "value": "transfer_unrelated_001"}
+      ]
+    },
+    {
+      "id": "hosted-route-binds-transfer-tenant",
+      "schema": "route-plan.schema.json",
+      "base": "positive/route-plan.lhh.json",
+      "validation": "route_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/tenant_id", "value": "tenant_other"}
+      ]
+    },
+    {
+      "id": "connector-rejects-reusable-account-material",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/presentation/reusable_account_material", "value": true}
+      ]
+    },
+    {
+      "id": "connector-rejects-inference-access",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/capability_set/inference_access", "value": true}
+      ]
+    },
+    {
+      "id": "connector-requires-https-audience",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "replace", "pointer": "/audience", "value": "http://executor.invalid/v1/jobs"}
+      ]
+    },
+    {
+      "id": "connector-expiry-is-short-lived",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "connector_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/expires_at", "value": "2026-09-02T18:04:00Z"},
+        {"op": "replace", "pointer": "/grant_policy_digest", "value": "sha256:59d372f44951f0e338876f13b374d50c3491c75b783fc5572a430d234e8ddff9"},
+        {"op": "replace", "pointer": "/approval/approved_grant_policy_digest", "value": "sha256:59d372f44951f0e338876f13b374d50c3491c75b783fc5572a430d234e8ddff9"}
+      ]
+    },
+    {
+      "id": "connector-approval-cannot-be-transplanted",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "connector_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/approval/approved_grant_policy_digest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}
+      ]
+    },
+    {
+      "id": "connector-budget-cannot-change-after-approval",
+      "schema": "local-harness-connector.schema.json",
+      "base": "positive/local-harness-connector.json",
+      "validation": "connector_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/budget/maximum_amount", "value": "0.500000"}
+      ]
+    },
+    {
+      "id": "pricing-requires-reservation-before-dispatch",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "remove", "pointer": "/reservation"}
+      ]
+    },
+    {
+      "id": "hybrid-quote-must-bound-compute",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "remove", "pointer": "/quote/dimensions/3"},
+        {"op": "remove", "pointer": "/quote/dimensions/2"}
+      ]
+    },
+    {
+      "id": "compute-usage-requires-image-provenance",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "schema",
+      "mutations": [
+        {"op": "remove", "pointer": "/usage/1/provenance/attestation_digest"}
+      ]
+    },
+    {
+      "id": "pricing-actual-plus-release-must-equal-reservation",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/settlement/released_amount", "value": "0.400000"}
+      ]
+    },
+    {
+      "id": "pricing-usage-digest-must-bind-usage",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/usage/1/dimensions/0/quantity", "value": "301"}
+      ]
+    },
+    {
+      "id": "pricing-dispatch-cannot-precede-reservation",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/dispatches/0/dispatched_at", "value": "2026-09-01T18:03:00Z"}
+      ]
+    },
+    {
+      "id": "pricing-operation-binds-route-actor",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/operation/actor/id", "value": "user_other"}
+      ]
+    },
+    {
+      "id": "quoted-dimension-maximum-equals-quantity-times-unit-price",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.hybrid-settled.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/quote/dimensions/0/maximum_amount", "value": "0.199999"},
+        {"op": "replace", "pointer": "/quote/maximum_amount", "value": "0.999999"}
+      ]
+    },
+    {
+      "id": "released-settlement-rejects-nonzero-usage",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.compute-released.json",
+      "route_plan": "positive/route-plan.compute-released.json",
+      "validation": "pricing_semantic",
+      "mutations": [
+        {"op": "replace", "pointer": "/usage/0/dimensions/0/quantity", "value": "1"},
+        {"op": "replace", "pointer": "/usage/0/amount", "value": "0.000500"},
+        {"op": "replace", "pointer": "/settlement/usage_digest", "value": "sha256:fdc1ae51337dc5d578b564234ade42675e6d611dac764b572d2de85571434f87"}
+      ]
+    },
+    {
+      "id": "released-settlement-rejects-zero-priced-nonzero-quantity",
+      "schema": "pricing.schema.json",
+      "base": "positive/pricing.compute-released.json",
+      "route_plan": "positive/route-plan.compute-released.json",
+      "validation": "pricing_semantic",
+      "error_match": "nonzero usage quantity",
+      "mutations": [
+        {"op": "replace", "pointer": "/quote/dimensions/0/unit_price", "value": "0"},
+        {"op": "replace", "pointer": "/quote/dimensions/0/maximum_amount", "value": "0"},
+        {"op": "replace", "pointer": "/quote/maximum_amount", "value": "0.300000"},
+        {"op": "replace", "pointer": "/reservation/reserved_amount", "value": "0.300000"},
+        {"op": "replace", "pointer": "/usage/0/dimensions/0/quantity", "value": "1"},
+        {"op": "replace", "pointer": "/settlement/released_amount", "value": "0.300000"},
+        {"op": "replace", "pointer": "/settlement/usage_digest", "value": "sha256:c70967552d41fd21707fbfac3b829ad6ae21d771491d16a2b3c01044cffb8689"}
+      ]
+    }
+  ]
+}

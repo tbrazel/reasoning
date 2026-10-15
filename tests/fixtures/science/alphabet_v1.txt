@@ -1,0 +1,9 @@
+REASONING_AUGMENTED_FOUR_BLOCK_PURE_POWER_V1
+support_residues=0,1,2,3
+rank=12
+free_column_count=8
+alphabet_assignment_count=65536
+solution_count=256
+block_constant_solution_count=256
+solution_checksum=2955430217838455939
+REASONING_END

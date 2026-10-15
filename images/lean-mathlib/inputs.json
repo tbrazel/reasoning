@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "ubuntu_snapshot": "20261006T000000Z",
+  "ca_bootstrap_url": "https://snapshot.ubuntu.com/ubuntu/20261006T000000Z/pool/main/c/ca-certificates/ca-certificates_20260601~22.04.1_all.deb",
+  "ca_bootstrap_sha256": "6e8cdcc8c86103acd4fc14649eac62ff2037108389074a7b167567af33c32245",
+  "build_packages": {
+    "git": "1:2.34.1-1ubuntu1.17",
+    "curl": "7.81.0-1ubuntu1.29",
+    "ca-certificates": "20260601~22.04.1"
+  },
+  "lean_version": "4.24.0",
+  "mathlib_revision": "f897ebcf72cd16f89ab4577d0c826cd14afaafc7",
+  "mathlib_url": "https://codeload.github.com/leanprover-community/mathlib4/tar.gz/f897ebcf72cd16f89ab4577d0c826cd14afaafc7",
+  "mathlib_sha256": "58274ab9ab85211e49cfa88eb84f17dee5e2d62623893549eef076ef9472103d",
+  "dependencies": {
+    "plausible": "dfd06ebfe8d0e8fa7faba9cb5e5a2e74e7bd2805",
+    "LeanSearchClient": "99657ad92e23804e279f77ea6dbdeebaa1317b98",
+    "importGraph": "d768126816be17600904726ca7976b185786e6b9",
+    "proofwidgets": "556caed0eadb7901e068131d1be208dd907d07a2",
+    "aesop": "725ac8cd67acd70a7beaf47c3725e23484c1ef50",
+    "Qq": "dea6a3361fa36d5a13f87333dc506ada582e025c",
+    "batteries": "8da40b72fece29b7d3fe3d768bac4c8910ce9bee",
+    "Cli": "91c18fa62838ad0ab7384c03c9684d99d306e1da"
+  }
+}
