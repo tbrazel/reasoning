@@ -4,20 +4,13 @@ import { chatModel, usefulChatModel } from "./modelRecommendations";
 import { InferenceLedger } from "./InferenceLedger";
 import { RetainedWork } from "./RetainedWork";
 import { ModelFeedbackPanel } from "./ChatFeedback";
-import { ApiError, ImpactProfile, MessageUsage, ModelBenchmarks, OrganizationPrices, OrganizationUsage as Usage, InferenceConfiguration, RoutingPolicy,
-  UsageTotal, aborted, errorMessage, organizationPath, request, usd } from "./organization-api";
+import { ApiError, ImpactProfile, ModelBenchmarks, OrganizationPrices, OrganizationUsage as Usage, InferenceConfiguration, RoutingPolicy,
+  UsageTotal, CATALOG_MAX_AGE, aborted, errorMessage, forgetSharedRead, modelCatalog, organizationPath, request, sharedRequest, usd } from "./organization-api";
 
 import { estimateLabel } from "./usageFormat";
 export { estimateLabel } from "./usageFormat";
 
-export function MessageUsageDetails({ usage }: { usage?: MessageUsage | null }) {
-  return <small className="org-message-usage" title={usage?.assumptions?.source}>
-    {usage?.prompt_tokens?.toLocaleString() ?? "—"} in / {usage?.completion_tokens?.toLocaleString() ?? "—"} out tokens
-    {usage?.actual_microusd != null && ` · ${usd(usage.actual_microusd)}`}
-    {usage?.estimated_kwh != null && ` · ≈ ${estimateLabel(usage.estimated_kwh * 1000)} Wh${usage.estimate_kind === "reference" ? "*" : ""}`}
-    {usage?.estimated_kg_co2e != null && ` · ≈ ${estimateLabel(usage.estimated_kg_co2e * 1000)} g CO₂`}
-  </small>;
-}
+export { MessageUsageDetails } from "./MessageUsageDetails";
 
 export function OrganizationModelBrowser({ organizationId, canManage = false, onAuthLost }: { organizationId: string; canManage?: boolean; onAuthLost: () => void }) {
   const [catalog, setCatalog] = useState<OrganizationPrices | null>(null);
@@ -31,14 +24,18 @@ export function OrganizationModelBrowser({ organizationId, canManage = false, on
   const [benchmarks, setBenchmarks] = useState<ModelBenchmarks>();
   useEffect(() => {
     const controller = new AbortController(); setBenchmarks(undefined);
-    void request<ModelBenchmarks>(organizationPath(organizationId) + "/model-benchmarks", { signal: controller.signal })
+    const benchmarksPath = organizationPath(organizationId) + "/model-benchmarks";
+    if (refresh) forgetSharedRead(benchmarksPath);
+    void sharedRequest<ModelBenchmarks>(benchmarksPath, { maxAge: CATALOG_MAX_AGE, durable: true, signal: controller.signal })
       .then(value => { if (!controller.signal.aborted) setBenchmarks(value); })
       .catch(cause => { if (!aborted(cause) && cause instanceof ApiError && cause.status === 401) onAuthLost(); });
     return () => controller.abort();
   }, [organizationId, refresh, onAuthLost]);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError("");
-    void request<OrganizationPrices>(organizationPath(organizationId) + "/model-prices", { signal: controller.signal })
+    // "Refresh catalog" asks the server again; otherwise reopening the dialog reuses the shared catalog.
+    if (refresh) forgetSharedRead(organizationPath(organizationId) + "/model-prices");
+    void modelCatalog(organizationId, controller.signal)
       .then((value) => { if (!controller.signal.aborted) setCatalog(value); }).catch((cause) => {
         if (aborted(cause)) return;
         if (cause instanceof ApiError && cause.status === 401) onAuthLost(); else setError(errorMessage(cause));
@@ -76,7 +73,7 @@ function OrganizationRouting({ organizationId, canManage, onAuthLost }: { organi
   const [policy, setPolicy] = useState<RoutingPolicy | null>(null), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   useEffect(() => {
     const abort = new AbortController();
-    void request<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", { signal: abort.signal })
+    void sharedRequest<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", { maxAge: 2000, signal: abort.signal })
       .then(value => { if (!abort.signal.aborted) setPolicy(value.routing ?? { strategy: "recommended", zdr: false, region: "global" }); })
       .catch(cause => { if (!aborted(cause)) { if (cause instanceof ApiError && cause.status === 401) onAuthLost(); else setError(errorMessage(cause)); } });
     return () => abort.abort();

@@ -163,8 +163,12 @@ uv run --locked reasoning-bot connect --server https://chat.example.org \
 `--no-browser` prints the approval URL for another computer. This does not skip
 human approval. Local tools remain disabled unless explicitly requested.
 Keep the runner process running, then type `@` and select the bot in a granted topic. By
-default only its owner's mentions invoke it; `--allow-other-users` explicitly
-trusts other humans in those topics. Bot/assistant messages never invoke it.
+default only its owner's mentions invoke it; `make bot-run BOT_ALLOW_OTHER_USERS=1`
+(`reasoning-bot run --allow-other-users`) explicitly trusts other humans in those
+topics. Without it, another member's mention is not run: the topic shows a
+cancelled bot activity under that message saying the bot accepts requests only
+from its owner. No CLI is invoked, the request text is not retained in the bot
+run, and the bot posts no reply. Bot/assistant messages never invoke it.
 Each invocation starts with the current human request or workflow node prompt,
 the latest twenty authorized messages through its captured sequence, and the
 beta topic's system instructions. Forks use their own copied history, never the
@@ -202,7 +206,7 @@ Mentions retain immutable bot/model identities rather than guessing from names.
 Conflicting models for the same bot in one message are refused. Editing a source
 message does not change an already admitted bot invocation or replay it.
 Chat and People show compact allowlisted activity from CLI/tool events, such as
-reading topic history, writing ledger entries, and awaiting owner approval.
+reading topic history, writing ledger entries, and waiting for approval.
 Heartbeats preserve tool activity; the run retains its last twelve activity labels.
 Private reasoning, tool arguments, and CLI stderr are not included in activity.
 
@@ -224,7 +228,10 @@ Each exact command requires **the bot owner's** approval in **People**, includin
 when another member requested the computation. A pending-request symbol replaces
 the bot's connection dot; click its name or symbol to review the exact action.
 Local execution, container computation and GitHub issue requests share this dialog.
-Closing it leaves requests pending. Requests have no decision-age timeout:
+The one exception to owner approval is a GitHub issue requested by a member the
+owner lets approve their own issues (see [Developer bots](#developer-bots)); that
+member, not the owner, sees it in this dialog, and the topic's bot activity says
+which of them is awaited. Closing it leaves requests pending. Requests have no decision-age timeout:
 they remain until decided, stopped, or invalidated by access/action changes.
 The runner's active runtime allowance excludes server-confirmed consent waits;
 provider CLIs and MCP transports can still impose their own connection limits.
@@ -262,7 +269,13 @@ Replies are checkpointed before posting and use stable message identities.
 Idle polling reconnects automatically after network errors or temporary HTTP
 408/425/500/502/503/504 failures, with 1–60-second capped backoff. Rate limits wait
 60 seconds. Authentication/permission failures stop with instructions for
-checking My bots and renewing access; secrets and response bodies are not logged.
+checking My bots and renewing access. A request refused with HTTP 4xx other
+than 401 reports its status and the server's short explanation, reduced to one
+printable line of at most 1000 characters; other response content, redirect
+and server-failure bodies, and secrets are not logged. Tools receive the same
+explanation, for example which argument failed validation.
+Tool argument refusals name the failing field and the violated schema rule,
+never the submitted values.
 Active invocations tolerate brief heartbeat outages with at most three attempts;
 extended outages or revoked access terminate the local process and retain its
 unknown outcome. Reconnection never replays an unknown CLI invocation.
@@ -319,7 +332,10 @@ not private reasoning text. Unknown outcomes are held, never automatically rerun
 In **My bots → Developer tools**, enable a bot and specify exact GitHub
 `owner/repository` allowlists and other permitted organization requesters.
 The owner is always permitted; other requesters also need the runner's
-`--allow-other-users` policy and current topic write access. Disabling or changing
+other-user policy (`BOT_ALLOW_OTHER_USERS=1`) and current topic write access.
+For any other requester the developer tools are absent, and `topic_context`
+returns a notice telling the bot to explain that the owner must add that person
+as a permitted requester; it does not disclose the repositories. Disabling or changing
 developer access invalidates pending approvals. This grant is separate from local
 CAS execution and does not expose SSH, shell, deployment credentials or raw logs.
 The `server_diagnostics` tool returns sanitized counts, status buckets and
@@ -403,7 +419,11 @@ server, and no paid inference is performed by these CLI commands.
 
 Install and authenticate GitHub CLI (`gh auth login`) on the bot computer.
 The `github_issue_create` tool proposes an exact repository, title and body in
-**People → the bot's pending requests**. Only the bot owner can approve publication.
+**People → the bot's pending requests**. The bot owner approves publication,
+except as described below. When another member requested the issue, the server
+appends a final line, `Requested in Reasoning by <member> through the bot <bot>.`,
+with both names as inert code spans; it is part of the previewed and approved text.
+GitHub shows the owner's `gh` account as the author.
 Review the preview carefully: an issue may be public and its body can contain
 private context. Approval is consumed durably once before the local gateway's
 fixed authenticated GitHub API request. GitHub credentials stay on that computer;
@@ -413,6 +433,33 @@ receipt outside the topic workspace. A timeout or interrupted write remains
 unconfirmed/unknown and is never republished automatically; inspect GitHub and the
 receipt before proposing a new request. No inferred model text grants developer
 privileges or bypasses this approval.
+
+Self-approved issues are off by default. Under **Other permitted requesters**,
+the owner can mark a permitted requester as **Approves their own GitHub issues**
+and set a limit of 1–20 self-approved issues per member in any 24 hours
+(default 3). Such a member's issue requests go to that member instead of the
+owner: the bot's **!** marker appears for them in **People**, and they review
+and publish the exact preview, including the attribution line. They cannot
+decide anyone else's request, and the owner cannot decide theirs; either can
+stop the invocation. Such a member can publish, without the owner's review,
+anything the bot can read during their invocation: the topic and its workspace,
+sanitized diagnostics, and tracked development source and test results on the
+bot computer. Enable it only for members trusted with that. The allowlisted repositories, exact request hash,
+consume-once publication, unknown-outcome handling and the owner's local `gh`
+credentials are unchanged. Approval and consumption recheck that the member is
+still a permitted, self-approving requester with current topic access. Requests
+beyond the limit, counting approved and pending ones, go to the owner instead,
+and approval past the limit is refused. Any developer-access change denies
+pending and approved, unconsumed issue requests. Each decision records who made
+it: the audit log has a `bot.issue.approve` or `bot.issue.deny` event with that
+person as actor, and the owner's issue approval list
+(`GET /api/organizations/{organization_id}/my-bots/issue-approvals`) shows
+consumed, published and unknown-outcome self-approved requests with the deciding
+member. The configuration is the
+`issue_self_approvers` (a subset of `requesters`, excluding the owner) and
+`issue_daily_limit` fields of
+`PUT /api/organizations/{organization_id}/my-bots/{bot_id}/developer`; omitted
+fields reset to off and 3.
 
 Every organization member can open **Account menu → My bots** to create and
 manage their own personal bot. Use **Follow my access**, or select exact topics, and message/knowledge

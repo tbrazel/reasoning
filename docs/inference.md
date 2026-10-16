@@ -178,6 +178,11 @@ three reactor initials and an overflow count. Initials expose full names on hove
 or keyboard focus; contact information is not included. The usage
 page aggregates counts under the actual recorded model, filtered by the reader's
 project access. These reactions are feedback, not mathematical verification.
+A conversation reads the reactions of its loaded messages with one request,
+`GET /api/organizations/{organization}/topics/{topic}/reactions/messages?ids=…`
+(at most 200 comma-separated message IDs, one topic access check), which returns
+the single-target result keyed by message ID; messages that are absent or have no
+retained output are omitted. Choosing a reaction updates only that message.
 
 Context is governed by the selected model's token capacity. It includes versioned
 mathematics instructions, an active user goal, explicit message pins, cited
@@ -304,11 +309,21 @@ Use `/api/organizations/{organization_id}/topics/{topic_id}/inference-runs`:
   token capacity, cited memory and pins.
 - Replaying the same client ID, requester, organization, topic, and parameters
   returns the existing runs without another catalog fetch or provider call.
-  Reusing the ID for different parameters returns 409. The browser retains a
-  lost-response attempt and its captured parameters in memory across topic
-  navigation; retry does not create a new request. This in-memory retry state is
-  cleared by reload, sign-out, or session loss. Inspect existing runs before
-  manually starting another request after reloading.
+  Reusing the ID for different parameters returns 409. While a submission is in
+  flight the conversation shows a sending status. After a network error, HTTP
+  408, or a server error, the browser retains the attempt and its captured
+  parameters in memory across topic navigation, and the conversation explains
+  that the message was saved but acceptance of the reply request is unconfirmed.
+  It shows the failure reason, the model, any selected effort, and where the request's
+  conversation context ends ("Conversation context ends at message #N"). **Retry
+  same request** resends the same client ID, model, effort, and context end, so
+  an accepted request returns its existing runs instead of starting another.
+  **Dismiss pending retry** clears only this browser state: it does not cancel
+  an accepted run, change its accounting, or delete the message; **Stop current
+  work** remains the cancellation control. Any other 4xx answer clears the
+  attempt and shows its error. The in-memory retry state is cleared by reload,
+  sign-out, or session loss. Inspect existing runs before manually starting
+  another request after reloading.
 - `GET` returns the most recent runs, with `limit` of 1–50 (default 20).
   Viewers can read but cannot submit or cancel.
 
@@ -476,7 +491,9 @@ Public model choices and displayed prices share a one-minute server cache;
 concurrent readers share one refresh, and failed refreshes retry after five
 seconds. Membership and organization settings are checked on every request.
 Inference admission fetches current availability and prices independently of
-this display cache.
+this display cache. The browser shares one copy of the catalog across topics and
+dialogs for five minutes ("Refresh catalog" fetches it again), and a model's
+detailed capabilities are built only when its row is first expanded.
 
 The browser and model pickers share compact expandable rows. Topic selection
 pickers are alphabetized within **Best for math**, **Best open-weights**, and
@@ -525,8 +542,26 @@ organization routing does. Browsing makes no paid inference calls.
 Protocol failures retain a static, allowlisted parser-stage diagnostic (framing,
 generation, usage, choices, content, reasoning, tool calls/validation, or encoding).
 Raw provider payloads and exception text are not copied into error messages.
-Nullable reasoning signatures/identities are accepted and preserved across tool
-continuations. Unknown charges or unresolved side effects still block automatic
+Streamed reasoning follows OpenRouter's
+[reasoning details shape](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens):
+`reasoning`/`reasoning_content` are strings or null, and `reasoning_details` is
+an array of objects whose optional `type` is a non-empty string; `index` is an
+optional non-negative integer; and `id`, `format`, `text`, `summary`, `data` and
+`signature` are strings or null. A fragment continues the latest detail with
+its index, or the latest detail when it has no index; its `text`, `summary`,
+`data` and `signature` strings are appended in arrival order, and null values
+add nothing. A fragment whose type, id, format or other non-text field differs
+starts a new detail. Other types, such as `reasoning.server_tool_call`, and
+unknown fields are preserved unchanged and returned with tool and output-limit continuations. Any other shape
+fails the call with `protocol_field` (for example `reasoning_details[].index`) and
+`protocol_value_type`, the JSON type received, named in the message.
+
+A `provider_protocol` failure after submission is never retried automatically
+and leaves the call's charge uncertain unless trustworthy usage arrived first.
+To recover, read the call's generation ID and diagnostic in the inference ledger
+or topic diagnostic export, and compare it with the OpenRouter activity record.
+Then reconcile the verified cost as described above, and start a new turn
+deliberately. Unknown charges or unresolved side effects still block automatic
 goal continuation; known recoverable turn failures schedule a fresh durable turn.
 
 `GET /api/organizations/{organization_id}/usage` returns all-time usage totals and

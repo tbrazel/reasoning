@@ -1,27 +1,25 @@
 import { schedulePoll } from "./polling";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import { BetaConversation } from "./BetaConversation";
-import { ForkOrigin, MessageActions } from "./ChatFeedback";
-import { BotAdministration } from "./BotAdministration";
+import { BetaConversation, definitiveRejection, requestModelReply } from "./BetaConversation";
+import { Feedback, ForkOrigin, MessageActions } from "./ChatFeedback";
 import { BotApprovalDialog, useBotApprovals } from "./BotApprovals";
-import { BotConversation, submitModelAttempt } from "./BotConversation";
+import { BotConversation } from "./BotConversation";
 import { withBotModels } from "./botModels";
 import { availableEfforts } from "./ReasoningEffort";
 import { editMentions, encodeMentions, MentionBinding } from "./composerMentions";
-import { ComputeAdministration } from "./ComputeAdministration";
 import { ComputeConversation } from "./ComputeConversation";
-import { KnowledgeBrowser } from "./KnowledgeBrowser";
-import { KnowledgeLinks, KnowledgeView, KnowledgeWorkspace } from "./KnowledgeWorkspace";
+import { KnowledgeLinks, KnowledgeView } from "./KnowledgeLinks";
+import { LazyView } from "./LazyView";
 import { WorkflowConversation } from "./WorkflowConversation";
 import { TopicActivity, orderedActivity } from "./TopicActivity";
 import { WorkflowAttempt } from "./workflow-api";
 import { WorkflowExecutionAttempt } from "./workflow-run-api";
 import { ComputeAttempt } from "./compute-api";
-import { MessageUsageDetails, OrganizationModelBrowser, OrganizationUsagePanel } from "./OrganizationUsage";
+import { MessageUsageDetails } from "./MessageUsageDetails";
 import { normalizeMathDelimiters } from "./markdownMath";
 import { modelOptionGroups } from "./modelRecommendations";
 import { ModelPicker, compactTokens } from "./ModelBrowser";
@@ -32,26 +30,43 @@ import { ThemeToggle } from "./ThemeToggle";
 import { ShortcutsHelp, SlashCommandPalette, TOPIC_COMMANDS, TopicCommand, dispatchTopicCommand, useTopicCommand } from "./TopicCommands";
 import { AttachmentButton, MarkdownMedia, MediaScope } from "./TopicMedia";
 import { TexRequestDialog, texRequest } from "./TexRequestDialog";
-import { HelpPage } from "./HelpPage";
 import { EmailVerification, VerifyEmailBanner } from "./EmailVerification";
 import { BatchInvitations, InvitationDeliveryProgress } from "./BatchInvitations";
 import { ProviderKeyUsage } from "./ProviderKeyUsage";
 import {
   Account, ApiError, Channel, EMPTY_HIERARCHY, Hierarchy, InferenceConfiguration, Invitation, InvitationMail, KeyMetadata, KIND_LABEL, KIND_SYMBOL, KnowledgeTool,
-  BotModel, Member, MentionQuery, Message, ModelAttempt, Organization, OrganizationPrices, Policy, Presence, Project, ProjectMember, SearchResult, Session, Topic, TopicKind,
-  aborted, authorLabel, decimalBudget, errorMessage, invitationEmailLabel, mentionMarkdown, mentionQuery, mentionText, mergeMessages, organizationPath, request, topicPath,
+  BotModel, Member, MentionQuery, Message, ModelAttempt, Organization, OrganizationPrices, Policy, Presence, Project, ProjectMember, SearchResult, Session, Topic, TopicKind, aborted,
+  authorLabel, decimalBudget, errorMessage, invitationEmailLabel, mentionMarkdown, mentionQuery, mentionText, mergeMessages, modelCatalog as sharedModelCatalog, organizationPath, readTopicSnapshot, rememberTopicSnapshot, request, sharedRequest, topicPath, PendingModelAttempt,
 } from "./organization-api";
+
+// Views opened by deliberate navigation load on first use.
+const loadKnowledgeWorkspace = () => import("./KnowledgeWorkspace");
+const KnowledgeWorkspace = lazy(() => loadKnowledgeWorkspace().then(module => ({ default: module.KnowledgeWorkspace })));
+const KnowledgeBrowser = lazy(() => import("./KnowledgeBrowser").then(module => ({ default: module.KnowledgeBrowser })));
+const BotAdministration = lazy(() => import("./BotAdministration").then(module => ({ default: module.BotAdministration })));
+const ComputeAdministration = lazy(() => import("./ComputeAdministration").then(module => ({ default: module.ComputeAdministration })));
+const OrganizationModelBrowser = lazy(() => import("./OrganizationUsage").then(module => ({ default: module.OrganizationModelBrowser })));
+const OrganizationUsagePanel = lazy(() => import("./OrganizationUsage").then(module => ({ default: module.OrganizationUsagePanel })));
+const HelpPage = lazy(() => import("./HelpPage").then(module => ({ default: module.HelpPage })));
 
 type Draft = { text: string; clientId: string; attempted: boolean; mentions?: MentionBinding[] };
 type Creation = "organization" | "project" | "channel" | "topic";
 const newDraft = (): Draft => ({ text: "", clientId: crypto.randomUUID(), attempted: false });
-// Stable renderer types preserve DOM selection across activity and message polling.
+/** Keep the current value when a refresh returns equal data, so dependent views and effects do not restart. */
+export const unchanged = <T,>(current: T, next: T): T => JSON.stringify(current) === JSON.stringify(next) ? current : next;
+// Stable renderer types and plugin lists preserve DOM selection across activity and message polling.
+const messageRemarkPlugins = [remarkGfm, remarkMath], messageRehypePlugins = [rehypeKatex];
 const messageMarkdownComponents: Components = {
   a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
   p: ({ children, node }) => node?.children.some(child => child.type === "element" && child.tagName === "img")
     ? <div className="topic-media-paragraph">{children}</div> : <p>{children}</p>,
   img: ({ src, alt }) => <MarkdownMedia src={src} alt={alt} />,
 };
+/** Markdown and KaTeX are the expensive part of a message; render them again only when the source text changes. */
+export const MessageMarkdown = React.memo(function MessageMarkdown({ markdown }: { markdown: string }) {
+  return <ReactMarkdown remarkPlugins={messageRemarkPlugins} rehypePlugins={messageRehypePlugins} skipHtml
+    components={messageMarkdownComponents}>{markdown}</ReactMarkdown>;
+});
 export const prepareMessageAttempt = (draft: Draft): Draft => ({
   ...draft, clientId: draft.clientId || crypto.randomUUID(), attempted: true,
 });
@@ -247,54 +262,6 @@ export function AccountMenu({ user, organization, organizations, canCreateOrgani
   </details>;
 }
 
-function AuthForm({ mode, invitation, onMode, onAuthenticated }: {
-  mode: "login" | "join" | "setup"; invitation: string; onMode: (mode: "login" | "join") => void;
-  onAuthenticated: (session: Session) => Promise<void>;
-}) {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [token, setToken] = useState(invitation);
-  const [organization, setOrganization] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const title = mode === "setup" ? "Create your organization" : mode === "join" ? "Join an organization" : "Sign in to Reasoning";
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setBusy(true); setError("");
-    try {
-      const session = await request<Session>(mode === "login" ? "/auth/login" : mode === "join" ? "/invitations/accept" : "/setup", {
-        method: "POST", body: mode === "login" ? { email, password } : mode === "join" ? { token, name, password }
-          : { email, name, password, organization_name: organization, setup_token: token },
-      });
-      await onAuthenticated(session);
-    } catch (cause) { setError(errorMessage(cause)); }
-    finally { setPassword(""); setBusy(false); }
-  };
-  return <main className="org-auth"><div className="org-auth-card">
-    <div className="org-wordmark"><img src="/reasoning.svg" alt="" />Reasoning</div>
-    <h1>{title}</h1>
-    <form onSubmit={submit}>
-      {mode !== "login" && <label>{mode === "setup" ? "Setup credential" : "Invitation token"}<input name="token" type="password"
-        required value={token} autoComplete="off" onChange={(event) => setToken(event.target.value)} /></label>}
-      {mode !== "join" && <label>Email<input name="email" type="email" required autoComplete="username" value={email}
-        onChange={(event) => setEmail(event.target.value)} autoFocus /></label>}
-      {mode !== "login" && <label>Your name<input name="name" required maxLength={200} value={name} autoComplete="name"
-        onChange={(event) => setName(event.target.value)} /></label>}
-      <label>Password<input name="password" type="password" required minLength={mode === "login" ? undefined : 12} maxLength={1024}
-        autoComplete={mode === "login" ? "current-password" : "new-password"} value={password}
-        onChange={(event) => setPassword(event.target.value)} /></label>
-      {mode === "setup" && <label>Organization name<input name="organization" required maxLength={200} value={organization}
-        onChange={(event) => setOrganization(event.target.value)} /></label>}
-      {error && <p role="alert" className="org-error">{error}</p>}
-      <button className="org-primary" disabled={busy}>{busy ? "Working…" : mode === "login" ? "Sign in" : mode === "join" ? "Accept invitation" : "Create organization"}</button>
-    </form>
-    {mode === "join" && <p className="org-help">Your invitation determines your email address. Already registered? <button onClick={() => onMode("login")}>Sign in first</button>.</p>}
-    {mode === "login" && <div className="org-help"><button onClick={() => onMode("join")}>Have an invitation?</button><p>For account recovery, contact your server administrator.</p></div>}
-    {mode === "setup" && <p className="org-help">The host administrator can read the private setup-token file or complete setup with the server CLI.</p>}
-    <footer>© Benjamin Antieau and Deven Manam · <a href="/licenses/Reasoning-Apache-2.0.txt">Apache-2.0</a></footer>
-  </div></main>;
-}
-
 function CreationDialog({ kind, hierarchy, organizationId, parentId, members, userId, canCreatePrivate, onClose, onCreate }: {
   kind: Creation; hierarchy: Hierarchy; organizationId: string; parentId?: string; members: Member[]; userId: string; canCreatePrivate: boolean; onClose: () => void;
   onCreate: (body: Record<string, unknown>) => Promise<void>;
@@ -320,11 +287,11 @@ function CreationDialog({ kind, hierarchy, organizationId, parentId, members, us
     if (kind !== "topic") return;
     const controller = new AbortController();
     void Promise.allSettled([
-      request<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", { signal: controller.signal }).then(value => {
+      sharedRequest<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", { maxAge: 2000, signal: controller.signal }).then(value => {
         if (!controller.signal.aborted) setAllowedModels(value.allowed_models);
         return value;
       }),
-      request<OrganizationPrices>(organizationPath(organizationId) + "/model-prices", { signal: controller.signal }),
+      sharedModelCatalog(organizationId, controller.signal),
     ]).then(([configuration, prices]) => {
       if (controller.signal.aborted) return;
       if (configuration.status === "rejected") { if (!aborted(configuration.reason)) setError(errorMessage(configuration.reason)); return; }
@@ -618,7 +585,7 @@ function PresenceSidebar({ organizationId, open, onClose, onAuthLost }: {
           ? <button type="button" className="org-bot-review-name" onClick={() => setReviewBot(bot)}>{bot.name}</button> : bot.name}</strong>
         {approvals.rows.some(row => row.bot_id === bot.id) ? <button type="button" className="org-bot-approval-indicator"
           aria-label={`Review ${approvals.rows.filter(row => row.bot_id === bot.id).length} pending requests from ${bot.name}`}
-          title="Owner approval needed" onClick={() => setReviewBot(bot)}>!</button> : <i className={bot.activity ? "org-bot-thinking" : ""}
+          title="Approval needed" onClick={() => setReviewBot(bot)}>!</button> : <i className={bot.activity ? "org-bot-thinking" : ""}
           title={bot.activity?.replaceAll("_", " ")} aria-label={bot.activity?.replaceAll("_", " ") ?? (bot.online ? "online" : "offline")} />
         }
       </div>)}
@@ -636,17 +603,20 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
   draft: Draft; updateDraft: (draft: Draft) => void; anchor: number | null;
   onPreference: () => void; onAuthLost: () => void;
   onForked: (topicId: string) => void;
-  modelAttempt?: ModelAttempt; onModelAttempt: (attempt?: ModelAttempt) => void;
+  modelAttempt?: PendingModelAttempt; onModelAttempt: (attempt?: PendingModelAttempt) => void;
   computeAttempt?: ComputeAttempt; onComputeAttempt: (attempt?: ComputeAttempt) => void;
   workflowAttempt?: WorkflowAttempt; onWorkflowAttempt: (attempt?: WorkflowAttempt) => void;
   workflowExecutionAttempt?: WorkflowExecutionAttempt; onWorkflowExecutionAttempt: (attempt?: WorkflowExecutionAttempt) => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  // A recent visit's messages and cursors render at once; the poll then fetches only what changed.
+  const snapshotKey = anchor === null ? `${user.id}/${organizationId}/${topic.id}` : "";
+  const [snapshot] = useState(() => snapshotKey ? readTopicSnapshot(snapshotKey) : undefined);
+  const [messages, setMessages] = useState<Message[]>(snapshot?.messages ?? []);
+  const [loading, setLoading] = useState(!snapshot);
   const [online, setOnline] = useState(true);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [older, setOlder] = useState(true);
+  const [older, setOlder] = useState(snapshot?.older ?? true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [atBottom, setAtBottom] = useState(anchor === null);
   const [mention, setMention] = useState<MentionQuery | null>(null);
@@ -687,8 +657,16 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
   const [botActivity, setBotActivity] = useState<TopicActivity[]>([]);
   const viewport = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const cursor = useRef(0);
-  const editCursor = useRef(0);
+  const cursor = useRef(snapshot?.cursor ?? 0);
+  const editCursor = useRef(snapshot?.editCursor ?? 0);
+  const retained = useRef({ messages, older, loading, failed: false });
+  const revalidated = useRef(!snapshot);
+  retained.current = { ...retained.current, messages, older, loading };
+  useEffect(() => () => {
+    const { messages, older, loading, failed } = retained.current;
+    if (snapshotKey) rememberTopicSnapshot(snapshotKey, loading || failed || !cursor.current ? null
+      : { messages, older, cursor: cursor.current, editCursor: editCursor.current });
+  }, [snapshotKey]);
   const acknowledged = useRef(0);
   const alive = useRef(true);
   const bottom = useRef(anchor === null);
@@ -700,7 +678,7 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     const refreshBots = async () => {
       try {
         const value = await request<Pick<Member, "id" | "name">[]>(root + "/bots", { signal: controller.signal });
-        if (!controller.signal.aborted) setTopicBots(value);
+        if (!controller.signal.aborted) setTopicBots(current => unchanged(current, value));
       } catch { if (!controller.signal.aborted) setTopicBots([]); }
       if (!controller.signal.aborted) timer = schedulePoll(refreshBots, 10000, controller.signal);
     };
@@ -735,7 +713,9 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     setMention(mentionQuery(input.value, input.selectionStart, topicBots.map(bot => bot.name)));
     setMentionIndex(0);
   }, [botMentionNamesKey]);
-  const mentionPeople = [...members, ...topicBots];
+  const mentionPeopleKey = [...members, ...topicBots].map(person => person.id + ":" + person.name).join("\0");
+  // Recomputed only when a name changes, so transcript rendering does not depend on routine member refreshes.
+  const mentionPeople = useMemo(() => [...members, ...topicBots], [mentionPeopleKey]);
   const boundMention = mention && draft.mentions?.find(binding => binding.start === mention.start);
   const modelMentionBots = mention ? topicBots.filter(bot => mention.query.toLocaleLowerCase().startsWith(bot.name.toLocaleLowerCase() + "-")
     && (!boundMention || boundMention.id === bot.id)).sort((a, b) => b.name.length - a.name.length) : [];
@@ -774,8 +754,8 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>; setModelError("");
     const refreshConfiguration = async () => {
       try {
-        const configuration = await request<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", {
-          signal: controller.signal });
+        const configuration = await sharedRequest<InferenceConfiguration>(organizationPath(organizationId) + "/inference-configuration", {
+          maxAge: 2000, signal: controller.signal });
         if (controller.signal.aborted) return;
         setInferenceConfiguration(configuration);
         setSelectedModel((current) => configuration.allowed_models.includes(current) || current.startsWith("bot/") ? current
@@ -785,10 +765,11 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
         if (aborted(cause)) return;
         if (cause instanceof ApiError && cause.status === 401) onAuthLost(); else setModelError(errorMessage(cause));
       }
-      if (!controller.signal.aborted) timer = schedulePoll(refreshConfiguration, 3000, controller.signal);
+      // Display freshness only: the server re-checks policy and admission when a request is sent.
+      if (!controller.signal.aborted) timer = schedulePoll(refreshConfiguration, 10000, controller.signal);
     };
     void refreshConfiguration();
-    void request<OrganizationPrices>(organizationPath(organizationId) + "/model-prices", { signal: controller.signal })
+    void sharedModelCatalog(organizationId, controller.signal)
       .then((catalog) => { if (!controller.signal.aborted) setModelCatalog(catalog); })
       .catch((cause) => {
         if (aborted(cause)) return;
@@ -800,10 +781,10 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     const refresh = async () => {
       try {
-        const value = await request<BotModel[]>(root + "/bot-models", { signal: controller.signal });
-        if (!controller.signal.aborted) setBotModels(value);
+        const value = await sharedRequest<BotModel[]>(root + "/bot-models", { maxAge: 2000, signal: controller.signal });
+        if (!controller.signal.aborted) setBotModels(current => unchanged(current, value));
       } catch { /* Keep the last known model choices during a transient refresh failure. */ }
-      if (!controller.signal.aborted) timer = schedulePoll(refresh, topic.kind === "beta" ? 3000 : 10000, controller.signal);
+      if (!controller.signal.aborted) timer = schedulePoll(refresh, topic.kind === "beta" ? 5000 : 10000, controller.signal);
     };
     void refresh();
     return () => { controller.abort(); clearTimeout(timer); };
@@ -831,13 +812,18 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
         editCursor.current = updates.after;
         setMessages((existing) => mergeMessages(mergeMessages(existing, incoming), updates.messages.filter(message =>
           existing.some(prior => prior.id === message.id) || incoming.some(prior => prior.id === message.id))));
-        setOnline(true); setLoading(false);
+        setOnline(true); setLoading(false); revalidated.current = true;
         if (incoming.some((message) => message.client_id === currentDraft.current.clientId && message.author_id === user.id)) {
           updateDraft(newDraft()); setError("");
         }
       } catch (cause) {
         if (aborted(cause)) return;
         if (cause instanceof ApiError && cause.status === 401) { onAuthLost(); return; }
+        // A topic that is no longer readable must not be shown again from memory.
+        if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+          retained.current.failed = true; if (snapshotKey) rememberTopicSnapshot(snapshotKey, null);
+          if (!revalidated.current) setMessages([]);
+        }
         setOnline(false); setError(errorMessage(cause)); setLoading(false);
       }
       if (!controller.signal.aborted) timer = schedulePoll(poll, 2000, controller.signal);
@@ -850,6 +836,24 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     if (bottom.current && viewport.current && !document.querySelector(".chat-action-menu") && !window.getSelection()?.toString())
       viewport.current.scrollTop = viewport.current.scrollHeight;
   }, [messages]);
+
+  // One permission-scoped request reads reactions for every newly loaded message; a reaction change then
+  // updates only its own message.
+  const [reactions, setReactions] = useState<Record<string, Feedback>>({});
+  const reactionsRequested = useRef(new Set<string>());
+  useEffect(() => {
+    const pending = messages.map(message => message.id).filter(id => !reactionsRequested.current.has(id));
+    for (let start = 0; start < pending.length; start += 200) {
+      const ids = pending.slice(start, start + 200);
+      ids.forEach(id => reactionsRequested.current.add(id));
+      void request<Record<string, Feedback>>(root + "/reactions/messages?ids=" + ids.map(encodeURIComponent).join(","))
+        .then(value => { if (alive.current) setReactions(current => ({ ...current, ...value })); })
+        .catch(cause => {
+          ids.forEach(id => reactionsRequested.current.delete(id));
+          if (cause instanceof ApiError && cause.status === 401) onAuthLost();
+        });
+    }
+  }, [messages, root, onAuthLost]);
 
   useEffect(() => {
     const mark = () => {
@@ -898,13 +902,12 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
         if (selectedEffort) modelRequest.effort = selectedEffort;
         onModelAttempt(modelRequest);
         try {
-          await submitModelAttempt(organizationId, topic.id, modelRequest);
-          if (alive.current) onModelAttempt(undefined);
+          await requestModelReply(organizationId, topic.id, modelRequest, onModelAttempt);
         } catch (cause) {
           if (!alive.current) return;
-          if (cause instanceof ApiError && cause.status >= 400 && cause.status < 500 && cause.status !== 408) onModelAttempt(undefined);
           if (cause instanceof ApiError && cause.status === 401) onAuthLost();
-          else setError(`Message sent, but ${errorMessage(cause).replace(/^./, (letter) => letter.toLowerCase())}`);
+          // An unconfirmed request is explained, with retry, in the conversation.
+          else if (definitiveRejection(cause)) setError(`Message sent, but ${errorMessage(cause).replace(/^./, (letter) => letter.toLowerCase())}`);
         }
       }
     } catch (cause) {
@@ -929,10 +932,18 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
     finally { if (alive.current) setLoadingOlder(false); }
   };
 
+  // The transcript is rebuilt only when messages, names, or permissions change; typing in the composer, polling
+  // that returns no change, and model-menu updates reuse the same elements. Callbacks read current values from refs.
+  const replyAgain = useRef({ selectedModel, selectedEffort, modelCatalog, onModelAttempt, onForked });
+  replyAgain.current = { selectedModel, selectedEffort, modelCatalog, onModelAttempt, onForked };
+  const canReplyAgain = topic.kind === "beta" && Boolean(selectedModel) && canWrite && online && !modelAttempt;
+  const workflowRunKey = topic.kind === "gamma" ? workflowActivity.map(entry => entry.id).join(",") : "";
+  const messageActivity: TopicActivity[] = useMemo(() => {
+  const workflowRuns = new Set(workflowRunKey.split(","));
   const visibleMessages = messages.filter(message => topic.kind !== "gamma" || !message.workflow_run_id
-    || !workflowActivity.some(entry => entry.id === "workflow:" + message.workflow_run_id));
+    || !workflowRuns.has("workflow:" + message.workflow_run_id));
   const groups = topic.kind === "alpha" ? alphaMessageGroups(visibleMessages) : visibleMessages.map(message => [message]);
-  const messageActivity: TopicActivity[] = groups.map((group, groupIndex) => ({
+  return groups.map((group, groupIndex) => ({
       id: "message:" + group[0].id, created_at: group[0].created_at, sequence: group[0].sequence, body: <>
       {topic.kind === "alpha" && (groupIndex === 0 || new Date(groups[groupIndex - 1][0].created_at * 1000).toDateString() !== new Date(group[0].created_at * 1000).toDateString())
         && <div className="org-message-day"><time dateTime={new Date(group[0].created_at * 1000).toISOString().slice(0, 10)}>{new Date(group[0].created_at * 1000).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" })}</time></div>}
@@ -940,30 +951,28 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
         key={message.id} id={"message-" + message.sequence} data-sequence={message.sequence}>
         <header>{!index && <strong>{authorLabel(message, members)}</strong>}
           <time dateTime={new Date(message.created_at * 1000).toISOString()} title={new Date(message.created_at * 1000).toLocaleString()}>{topic.kind === "alpha" ? new Date(message.created_at * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : new Date(message.created_at * 1000).toLocaleString()}</time></header>
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} skipHtml
-          components={messageMarkdownComponents}>{normalizeMathDelimiters(mentionMarkdown(message.content, mentionPeople))}</ReactMarkdown>
+        <MessageMarkdown markdown={normalizeMathDelimiters(mentionMarkdown(message.content, mentionPeople))} />
         {message.author_kind === "assistant" && <MessageUsageDetails usage={message.usage} />}
         <MessageActions organizationId={organizationId} topicId={topic.id} messageId={message.id}
-          people={mentionPeople}
+          people={mentionPeople} batchedReactions reactions={reactions[message.id]}
           message={message} canEdit={canWrite && message.author_kind !== "assistant" && message.author_kind !== "bot" && message.author_id === user.id}
           onEdited={updated => setMessages(existing => mergeMessages(existing, [updated]))}
-          onReplyAgain={topic.kind === "beta" && selectedModel && canWrite && online && !modelAttempt ? async () => {
+          onReplyAgain={canReplyAgain ? async () => {
+            const { selectedModel, selectedEffort, modelCatalog, onModelAttempt } = replyAgain.current;
             const metadata = modelCatalog?.models.find(model => model.id === selectedModel);
             const attempt = automaticModelAttempt(selectedModel, message.sequence, metadata?.max_completion_tokens ?? 8192);
             if (selectedEffort) attempt.effort = selectedEffort;
             onModelAttempt(attempt);
-            try { await submitModelAttempt(organizationId, topic.id, attempt); onModelAttempt(undefined); }
-            catch (cause) {
-              if (cause instanceof ApiError && cause.status >= 400 && cause.status < 500 && cause.status !== 408) onModelAttempt(undefined);
-              throw cause;
-            }
+            await requestModelReply(organizationId, topic.id, attempt, onModelAttempt);
           } : undefined}
           kind={topic.kind} canWrite={canWrite} onForked={(id) => {
+            const { selectedModel, onForked } = replyAgain.current;
             try { if (selectedModel) localStorage.setItem(`reasoning-model:${user.id}:${organizationId}:${id}`, selectedModel); }
             catch { /* Storage is optional. */ }
             onForked(id);
           }} onAuthLost={onAuthLost} />
       </article>)}</div></> }));
+  }, [messages, reactions, workflowRunKey, topic.kind, topic.id, mentionPeople, members, user.id, organizationId, canWrite, canReplyAgain, onAuthLost]);
   return <MediaScope.Provider value={{ organizationId, topicId: topic.id }}><section className="org-conversation" aria-label="Topic conversation">
     {texOpen && <TexRequestDialog bots={botModels} names={botNames} onClose={() => setTexOpen(false)} onPrepare={(source, bot) => {
       const label = `@${botNames[bot.bot_id] ?? bot.name}`;
@@ -986,9 +995,9 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
         .map(item => <div key={item.id} data-activity-id={item.id}>{item.body}</div>)}
       {topic.kind === "beta" && <BetaConversation organizationId={organizationId} topicId={topic.id} userId={user.id}
         canWrite={canWrite} canManage={canManage} online={online} toolbarTarget={composerTools} hidePlay={Boolean(draft.text.trim())}
-        attempt={modelAttempt} onAttempt={onModelAttempt} onAuthLost={onAuthLost} onActivity={setBetaActivity} />}
+        attempt={modelAttempt} onAttempt={onModelAttempt} onAuthLost={onAuthLost} onActivity={setBetaActivity} wake={messages.at(-1)?.sequence} />}
       <BotConversation organizationId={organizationId} topicId={topic.id} names={botNames} userId={user.id}
-        canWrite={canWrite} canManage={canManage} onActivity={setBotActivity} onAuthLost={onAuthLost} />
+        canWrite={canWrite} canManage={canManage} onActivity={setBotActivity} onAuthLost={onAuthLost} wake={messages.at(-1)?.sequence} />
 
     </div>
     {!atBottom && messages.length + workflowActivity.length + computeActivity.length + betaActivity.length > 0 && <button className="org-jump" aria-label="Jump to newest message" title="Newest message" onClick={() => {
@@ -1014,7 +1023,8 @@ function Conversation({ organizationId, topic, members, user, canWrite, canManag
       <SlashCommandPalette topicId={topic.id} kind={topic.kind} text={draft.text} onSelect={chooseCommand} />
       <label className="org-visually-hidden" htmlFor="org-message">Message</label>
       <textarea id="org-message" ref={textarea} placeholder={!canWrite ? "You have read-only access" : topic.kind === "beta" && modelAttempt
-        ? "Resolve the pending model request before sending another message" : topic.kind === "beta" && selectedModel
+        ? modelAttempt.unconfirmed ? "Retry or dismiss the unconfirmed reply request before sending another message"
+          : "Sending the reply request…" : topic.kind === "beta" && selectedModel
       ? `Message ${replyCatalog?.models.find(model => model.id === selectedModel)?.execution_source === "bot"
         ? replyCatalog.models.find(model => model.id === selectedModel)?.name : selectedModel}…` : "Write a message…"} value={draft.text}
         disabled={!canWrite || sending || (topic.kind === "beta" && !!modelAttempt)} maxLength={16000} rows={1} onChange={(event) => {
@@ -1092,15 +1102,17 @@ function Administration({ organization, onClose, onRefresh, onAuthLost }: { orga
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const root = organizationPath(organization.id);
+  // Each tab loads only what it shows; the bot and compute tabs load their own data.
   const reload = useCallback(async () => {
-    const [people, invites, credentials, policy, mailConfiguration] = await Promise.all([
-      request<Member[]>(root + "/members"), request<Invitation[]>(root + "/invitations"), request<KeyMetadata[]>(root + "/provider-keys"), request<Policy>(root + "/policy"),
-      request<InvitationMail>(root + "/invitation-mail"),
+    if (tab === "members") setMembers(await sharedRequest<Member[]>(root + "/members", { maxAge: 2000 }));
+    else if (tab === "invitations") await Promise.all([
+      request<Invitation[]>(root + "/invitations").then(setInvitations), request<InvitationMail>(root + "/invitation-mail").then(setMail),
     ]);
-    setMembers(people); setInvitations(invites); setKeys(credentials);
-    setMail(mailConfiguration);
-    setBudget((policy.monthly_budget_microusd / 1_000_000).toFixed(6).replace(/\.?0+$/, ""));
-  }, [root]);
+    else if (tab === "ai") await Promise.all([
+      request<KeyMetadata[]>(root + "/provider-keys").then(setKeys),
+      request<Policy>(root + "/policy").then(policy => setBudget((policy.monthly_budget_microusd / 1_000_000).toFixed(6).replace(/\.?0+$/, ""))),
+    ]);
+  }, [root, tab]);
   useEffect(() => { void reload().catch((cause) => setError(errorMessage(cause))); }, [reload]);
   useEffect(() => {
     if (tab !== "invitations") return;
@@ -1123,8 +1135,8 @@ function Administration({ organization, onClose, onRefresh, onAuthLost }: { orga
     <nav className="org-admin-tabs" aria-label="Administration">{(["members", "invitations", "ai", "bots", "compute"] as const).map((value) =>
       <button key={value} aria-pressed={tab === value} onClick={() => { setTab(value); setError(""); }}>{value === "ai" ? "Inference" : value[0].toUpperCase() + value.slice(1)}</button>)}</nav>
     {error && <p role="alert" className="org-error">{error}</p>}
-    {tab === "bots" && <BotAdministration key={organization.id} organizationId={organization.id} />}
-    {tab === "compute" && <ComputeAdministration key={organization.id} organizationId={organization.id} onAuthLost={onAuthLost} />}
+    {tab === "bots" && <LazyView label="Bot administration"><BotAdministration key={organization.id} organizationId={organization.id} /></LazyView>}
+    {tab === "compute" && <LazyView label="Compute administration"><ComputeAdministration key={organization.id} organizationId={organization.id} onAuthLost={onAuthLost} /></LazyView>}
     {tab === "members" && <ul className="org-admin-list">{members.map((member) => <li key={member.id}><div><strong>{member.name}</strong><small>{member.email}</small></div>
       {organization.role === "owner" || !["owner", "admin"].includes(member.role) ? <>
         <select aria-label={"Role for " + member.name} value={member.role} disabled={busy} onChange={(event) => void action(() => request(root + "/members/" + member.id, { method: "PATCH", body: { role: event.target.value } }))}>
@@ -1191,26 +1203,26 @@ function Administration({ organization, onClose, onRefresh, onAuthLost }: { orga
   </Dialog>;
 }
 
-export function OrganizationApp() {
+/** The signed-in workspace; the shell owns the session check, sign-in, and pending invitation/verification links. */
+export function OrganizationApp({ user, onAccount, onAuthenticated, onSignedOut, invitation, onInvitation: setInvitation,
+  verificationToken, onVerificationToken: setVerificationToken, sessionOrganization = null }: {
+  user: Account; onAccount: (account: Account) => void; onAuthenticated: (session: Session) => Promise<void>; onSignedOut: () => void;
+  invitation: string; onInvitation: (token: string) => void; verificationToken: string; onVerificationToken: (token: string) => void;
+  sessionOrganization?: string | null;
+}) {
   const [pairCode, setPairCode] = useState(() => typeof window === "undefined" ? undefined : new URLSearchParams(window.location.search).get("bot_connect") ?? undefined);
-  const [user, setUser] = useState<Account | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(true);
-  const [invitation, setInvitation] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.hash.slice(1)).get("invite") ?? "");
-  const [verificationToken, setVerificationToken] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.hash.slice(1)).get("verify") ?? "");
-  const [mode, setMode] = useState<"login" | "join">(invitation ? "join" : "login");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [workspace, setWorkspace] = useState(() => {
     const query = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
     return { organization: query.get("organization"), view: query.get("view"), topic: query.get("topic") ?? undefined, project: query.get("project") ?? undefined };
   });
-  const [organizationId, setOrganizationId] = useState<string | null>(workspace.organization);
+  const [organizationId, setOrganizationId] = useState<string | null>(workspace.organization ?? sessionOrganization);
   const [hierarchy, setHierarchy] = useState<Hierarchy>(EMPTY_HIERARCHY);
   const [navigationUsage, setNavigationUsage] = useState<NavigationUsage>();
   const [members, setMembers] = useState<Member[]>([]);
   const [selection, setSelection] = useState<{ topic: string; anchor: number | null } | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
-  const [modelAttempts, setModelAttempts] = useState<Record<string, ModelAttempt | undefined>>({});
+  const [modelAttempts, setModelAttempts] = useState<Record<string, PendingModelAttempt | undefined>>({});
   const [computeAttempts, setComputeAttempts] = useState<Record<string, ComputeAttempt | undefined>>({});
   const [workflowAttempts, setWorkflowAttempts] = useState<Record<string, WorkflowAttempt | undefined>>({});
   const [workflowExecutionAttempts, setWorkflowExecutionAttempts] = useState<Record<string, WorkflowExecutionAttempt | undefined>>({});
@@ -1274,12 +1286,8 @@ export function OrganizationApp() {
   const draft = drafts[draftKey] ?? { text: "", clientId: "", attempted: false };
   const preferenceRefresh = useCallback(() => setRefresh((value) => value + 1), []);
   const beginCreation = (kind: Creation, parentId?: string) => { setCreationParent(parentId); setCreation(kind); };
-  const authLost = useCallback(() => {
-    setUser(null); setOrganizations([]); setOrganizationId(null); setHierarchy(EMPTY_HIERARCHY); setMembers([]);
-    setSelection(null); setDrafts({}); setModelAttempts({}); setComputeAttempts({}); setWorkflowAttempts({}); setWorkflowExecutionAttempts({}); setAdmin(false); setCreation(null); setCreationParent(undefined); setResults(null); setSearch("");
-    setInformation(null); setTool(null); setEntitySettings(null);
-    setNavigationUsage(undefined);
-  }, []);
+  // Signing out unmounts this workspace, which discards drafts, retained attempts, and shared reads.
+  const authLost = onSignedOut;
 
   useEffect(() => {
     if (![...Object.values(computeAttempts), ...Object.values(workflowAttempts), ...Object.values(workflowExecutionAttempts)].some(Boolean)) return;
@@ -1289,38 +1297,28 @@ export function OrganizationApp() {
   }, [computeAttempts, workflowAttempts, workflowExecutionAttempts]);
 
   useEffect(() => {
-    if (invitation || verificationToken) window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    const controller = new AbortController();
-    const failure = (cause: unknown) => {
-      if (!controller.signal.aborted && !aborted(cause) && !(cause instanceof ApiError && cause.status === 401)) setError(errorMessage(cause));
-    };
-    void Promise.all([
-      request<{ initialized: boolean }>("/health", { signal: controller.signal })
-        .then(health => { if (!controller.signal.aborted) setInitialized(health.initialized); }).catch(failure),
-      request<Account>("/auth/me", { signal: controller.signal })
-        .then(account => { if (!controller.signal.aborted) { setUser(account); setLoading(false); } }).catch(failure),
-    ]).finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
     if (!user) return;
     const controller = new AbortController();
-    void request<Organization[]>("/organizations", { signal: controller.signal }).then((items) => {
+    void sharedRequest<Organization[]>("/organizations", { maxAge: 2000, signal: controller.signal }).then((items) => {
       setOrganizations(items); setOrganizationId((current) => workspace.organization ?? (items.some((item) => item.id === current) ? current : items[0]?.id ?? null));
     }).catch((cause) => { if (!aborted(cause)) setError(errorMessage(cause)); });
     return () => controller.abort();
   }, [user?.id]);
 
+  const listRound = useRef(0);
+  useEffect(() => { listRound.current = 0; }, [user?.id, organizationId]);
   useEffect(() => {
     if (!user || !organizationId) return;
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
+      // Unread state in the hierarchy refreshes every round, including after a read or preference change;
+      // membership and organization lists change rarely and refresh every third round.
+      const lists = listRound.current++ % 3 === 0;
       try {
         const [, people, orgs] = await Promise.all([
-          request<Hierarchy>(organizationPath(organizationId) + "/hierarchy", { signal: controller.signal }).then(tree => {
+          sharedRequest<Hierarchy>(organizationPath(organizationId) + "/hierarchy", { maxAge: 1000, signal: controller.signal }).then(tree => {
             if (controller.signal.aborted) return tree;
-            setHierarchy(tree);
+            setHierarchy(current => unchanged(current, tree));
             setSelection((current) => {
               if (current && tree.topics.some(item => item.id === current.topic)) return current;
               const saved = workspace.topic ?? readNavigation(user.id, organizationId).topic;
@@ -1329,11 +1327,13 @@ export function OrganizationApp() {
             });
             return tree;
           }),
-          request<Member[]>(organizationPath(organizationId) + "/members", { signal: controller.signal }),
-          request<Organization[]>("/organizations", { signal: controller.signal }),
+          lists ? sharedRequest<Member[]>(organizationPath(organizationId) + "/members", { maxAge: 2000, signal: controller.signal }) : null,
+          lists ? sharedRequest<Organization[]>("/organizations", { maxAge: 2000, signal: controller.signal }) : null,
         ]);
         if (controller.signal.aborted) return;
-        setMembers(people); setOrganizations(orgs); setOnline(true);
+        if (people) setMembers(current => unchanged(current, people));
+        if (orgs) setOrganizations(current => unchanged(current, orgs));
+        setOnline(true);
       } catch (cause) {
         if (aborted(cause)) return;
         if (cause instanceof ApiError && cause.status === 401) { authLost(); return; }
@@ -1419,12 +1419,9 @@ export function OrganizationApp() {
   }, [hierarchy.topics, selection, creation, admin, helpOpen]);
 
   const authenticated = async (session: Session) => {
-    setUser(await request<Account>("/auth/me")); setInitialized(true); setError("");
-    if (session.organization_id) { setOrganizationId(workspace.organization ?? session.organization_id); setInvitation(""); }
+    await onAuthenticated(session); setError("");
+    if (session.organization_id) setOrganizationId(workspace.organization ?? session.organization_id);
   };
-  if (loading) return <main className="org-auth"><p role="status">Opening Reasoning…</p></main>;
-  if (!user) return <><AuthForm key={initialized ? mode : "setup"} mode={!initialized ? "setup" : mode} invitation={invitation} onMode={setMode} onAuthenticated={authenticated} />
-    {error && <div className="org-startup-error" role="alert">{error} <button onClick={() => window.location.reload()}>Reconnect</button></div>}</>;
 
   const select = (id: string, anchor: number | null = null) => {
     setHelpOpen(false);
@@ -1468,7 +1465,7 @@ export function OrganizationApp() {
       <div className="org-toolbar-icons"><ThemeToggle />{organization && <button className="org-icon-button org-presence-toggle" aria-label="Show online people and bots" title="People" aria-expanded={presenceOpen}
         onClick={() => setPresenceOpen((value) => !value)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5"/></svg></button>}
       {organization && topic && <TopicCopyButton key={organization.id + "/" + topic.id} organizationId={organization.id} topicId={topic.id} onAuthLost={authLost} />}
-      {organization && <KnowledgeLinks organizationId={organization.id} topicId={topic?.id} onOpen={openKnowledge} />}
+      {organization && <KnowledgeLinks organizationId={organization.id} topicId={topic?.id} onOpen={openKnowledge} onIntent={() => void loadKnowledgeWorkspace().catch(() => { /* The workspace view reports load failures. */ })} />}
       <a className="org-icon-button" href="/organization.html?view=help" aria-label="Help" title="Help" onClick={event => {
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         event.preventDefault(); setHelpOpen(value => !value);
@@ -1478,10 +1475,10 @@ export function OrganizationApp() {
     {error && <div className="org-banner" role="alert">{error}<button aria-label="Dismiss error" onClick={() => setError("")}>×</button></div>}
     {verificationToken && <VerifyEmailBanner token={verificationToken} onDone={() => {
       setVerificationToken(""); window.history.replaceState(null, "", window.location.pathname + window.location.search);
-      void request<Account>("/auth/me").then(setUser).catch(cause => setError(errorMessage(cause)));
+      void request<Account>("/auth/me").then(onAccount).catch(cause => setError(errorMessage(cause)));
     }} />}
     {invitation && <div className="org-banner">You have an invitation. <button onClick={() => void request<Session>("/invitations/accept", { method: "POST", body: { token: invitation } })
-      .then(async (session) => { await authenticated(session); setRefresh((value) => value + 1); setUser(await request<Account>("/auth/me")); })
+      .then(async (session) => { await authenticated(session); setRefresh((value) => value + 1); })
       .catch((cause) => setError(errorMessage(cause)))}>Accept invitation</button><button onClick={() => setInvitation("")}>Dismiss</button></div>}
     <div className="org-body">
       {navOpen && <button className="org-nav-backdrop" aria-label="Close project navigation" onClick={() => setNavOpen(false)} />}
@@ -1502,8 +1499,8 @@ export function OrganizationApp() {
           onSignOut={() => void request("/auth/logout", { method: "POST", body: {} }).then(authLost).catch((cause) => setError(errorMessage(cause)))} /></footer>
       </aside>
       <main className="org-main">
-        {helpOpen ? <HelpPage onClose={() => setHelpOpen(false)} /> : knowledgeView && organization ? <MediaScope.Provider value={{ organizationId: organization.id }}><KnowledgeWorkspace key={organization.id + knowledgeView} organization={organization} hierarchy={hierarchy} view={knowledgeView}
-          embedded initialTopicId={workspace.topic ?? topic?.id} initialProjectId={workspace.project} onAuthLost={authLost} /></MediaScope.Provider> : searching || results !== null ? <section className="org-search-results"><header><h1>Search messages</h1><button onClick={() => setSearch("")}>Close search</button></header>
+        {helpOpen ? <LazyView label="Help"><HelpPage onClose={() => setHelpOpen(false)} /></LazyView> : knowledgeView && organization ? <MediaScope.Provider value={{ organizationId: organization.id }}><LazyView label="Research workspace"><KnowledgeWorkspace key={organization.id + knowledgeView} organization={organization} hierarchy={hierarchy} view={knowledgeView}
+          embedded initialTopicId={workspace.topic ?? topic?.id} initialProjectId={workspace.project} onAuthLost={authLost} /></LazyView></MediaScope.Provider> : searching || results !== null ? <section className="org-search-results"><header><h1>Search messages</h1><button onClick={() => setSearch("")}>Close search</button></header>
           {searching ? <p role="status">Searching…</p> : !results?.length ? <p>No matching messages.</p> : <ol>{results.map((result) => <li key={result.id}><button onClick={() => select(result.topic_id, result.sequence)}>
             <small>{result.project_name} / #{result.channel_name} / {KIND_SYMBOL[result.topic_kind]}-{result.topic_name}</small>
             <p>{mentionText(result.content, members)}</p></button></li>)}</ol>}
@@ -1528,13 +1525,14 @@ export function OrganizationApp() {
     </div>
     {information && <Dialog title={information === "user" ? "User information" : "Organization information"} onClose={() => setInformation(null)}>
       {information === "user" ? <><dl><dt>Name</dt><dd>{user.name}</dd><dt>Email</dt><dd>{user.email}</dd></dl>
-        <EmailVerification onVerified={() => { void request<Account>("/auth/me").then(setUser).catch(cause => setError(errorMessage(cause))); }} /></>
+        <EmailVerification onVerified={() => { void request<Account>("/auth/me").then(onAccount).catch(cause => setError(errorMessage(cause))); }} /></>
         : organization && <dl><dt>Name</dt><dd>{organization.name}</dd><dt>Your role</dt><dd>{organization.role}</dd></dl>}
     </Dialog>}
     {tool && organization && <Dialog title={tool === "bots" ? "My bots" : tool === "knowledge" ? "Shared knowledge" : tool === "prices" ? "Model capabilities" : "Usage and energy"} onClose={() => setTool(null)}>
       {tool === "bots" && pairCode && <label>Approve in organization<select value={organization.id} onChange={(event) => switchOrganization(event.target.value)}>
         {organizations.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
       </select></label>}
+      <LazyView label={tool === "bots" ? "My bots" : tool === "knowledge" ? "Shared knowledge" : tool === "prices" ? "Model capabilities" : "Usage and energy"}>
       {tool === "bots" ? <BotAdministration key={organization.id} organizationId={organization.id} personal readOnly={organization.role === "viewer"} pairCode={pairCode} onConnected={() => {
         setPairCode(undefined); setTool(null); const url = new URL(window.location.href); url.searchParams.delete("bot_connect"); window.history.replaceState(null, "", url);
       }} />
@@ -1542,6 +1540,7 @@ export function OrganizationApp() {
           canWrite={organization.role !== "viewer"} onAuthLost={authLost} />
         : tool === "prices" ? <OrganizationModelBrowser key={organization.id} organizationId={organization.id} canManage={["owner", "admin"].includes(organization.role)} onAuthLost={authLost} />
           : <OrganizationUsagePanel key={organization.id} organizationId={organization.id} canManage={["owner", "admin"].includes(organization.role)} onAuthLost={authLost} />}
+      </LazyView>
     </Dialog>}
     {shortcutsOpen && <ShortcutsHelp onClose={() => setShortcutsOpen(false)} />}
     {creation === "organization" && <OrganizationCreationDialog organizations={organizations}

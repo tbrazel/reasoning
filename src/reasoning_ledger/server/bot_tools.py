@@ -15,6 +15,28 @@ from .knowledge_store import KnowledgeStore
 from .store import StoreError
 from .workbench_tools import DESCRIPTIONS, OPERATIONS, READS, MathematicalLedger, operation_schema
 
+DEVELOPER_NOT_PERMITTED = (
+    "This bot's developer tools (GitHub issues, server diagnostics, development tests) are not available to the person "
+    "who requested this invocation. If they asked for one of these actions, tell them that the bot owner must add them "
+    "under My bots -> Developer tools -> permitted requesters; do not attempt the action another way.")
+
+
+def argument_problem(error):
+    """Describe a schema violation from schema-defined facts only; argument values are never echoed."""
+    location = "/".join(str(part)[:60] for part in error.absolute_path)[:200] or "arguments"
+    value = error.validator_value
+    if error.validator == "required" and isinstance(error.instance, dict):
+        reason = "missing required " + ", ".join(str(name) for name in value if name not in error.instance)
+    elif error.validator == "additionalProperties":
+        allowed = sorted(error.schema.get("properties", {}))
+        reason = "has unsupported fields; allowed: " + ", ".join(allowed) if allowed else "accepts no fields"
+    elif error.validator in {"type", "enum", "const", "minLength", "maxLength", "minimum", "maximum",
+                             "minItems", "maxItems", "pattern"}:
+        reason = f"violates {error.validator} {json.dumps(value)[:300]}"
+    else:
+        reason = f"violates {error.validator}"
+    return f"{location} {reason}"
+
 
 class BotTools:
     def __init__(self, runtime, *, compute=None):
@@ -156,6 +178,10 @@ class BotTools:
                 developer_policy = {"enabled": True, "repositories": json.loads(developer["repositories_json"])}
             except StoreError:
                 developer_policy = {"enabled": False}
+                grant = db.execute("SELECT enabled FROM bot_developer_permissions WHERE bot_id=?", (bot["id"],)).fetchone()
+                if grant and grant[0]:
+                    # Presence already marks developer bots; only this requester's exclusion is stated.
+                    developer_policy["reason"] = "requester_not_permitted"
             return {"tools": tools, "scope": topic_metadata(self.store, db, run["requested_by"],
                     run["organization_id"], run["topic_id"]), "bot_id": bot["id"],
                     "owner_id": bot["created_by"], "requested_by": run["requested_by"], "developer": developer_policy,
@@ -190,8 +216,8 @@ class BotTools:
             self.runtime.bots._meter(credential, "write")
         try:
             Draft202012Validator(definition["input_schema"]).validate(arguments)
-        except ValidationError:
-            raise StoreError(400, "invalid mathematical tool arguments") from None
+        except ValidationError as exc:
+            raise StoreError(400, f"invalid mathematical tool arguments for {name}: {argument_problem(exc)}") from None
         scope = context["scope"]
         if name not in {"tool_search", "tool_call", "topic_context"}:
             with self.store.transaction(write=True) as db:
@@ -236,16 +262,13 @@ class BotTools:
         research = BotResearch(self.runtime, credential, run_id, lease, compute=self.compute)
         if name in {tool.name for tool in research.registry.list()}:
             from ..agents.scientific import ScientificToolError
-            from .research_network import SourceError
+            from .tool_failures import tool_failure
 
             try:
                 result = research.registry.invoke(name, arguments)
-            except SourceError as exc:
-                result = {"error": "Public source read failed; try another primary source.", "code": exc.code}
-            except (OSError, TimeoutError):
-                result = {"error": "Public source connection failed after bounded read retries.", "code": "source_connection_failed"}
-            except (ValueError, ScientificToolError):
-                result = {"error": "Source arguments or source content were not accepted.", "code": "tool_arguments_or_content_invalid"}
+            except (ValueError, ScientificToolError, OSError, TimeoutError) as exc:
+                code, message = tool_failure(exc, name)
+                result = {"error": message, "code": code}
             with self.store.transaction(write=True) as db:
                 self.runtime.leased(db, credential, run_id, lease)
                 db.execute("INSERT INTO bot_tool_receipts(run_id,name,result_json,created_at) VALUES(?,?,?,?)",
@@ -258,6 +281,8 @@ class BotTools:
                 bot, run = self.runtime.leased(db, credential, run_id, lease)
                 result = {"ready": True, "scope": scope, "context": conversation(self.runtime, db, bot, run),
                           "tools": [tool["name"] for tool in context["tools"]]}
+                if context["developer"].get("reason") == "requester_not_permitted":
+                    result["notices"] = [DEVELOPER_NOT_PERMITTED]
                 db.execute("UPDATE bot_runs SET gateway_json=? WHERE id=?",
                            (json.dumps({"ready": True, "stage": "cli", "tool_count": len(context["tools"])}), run_id))
                 db.execute("INSERT INTO bot_tool_receipts(run_id,name,result_json,created_at) VALUES(?,?,?,?)",

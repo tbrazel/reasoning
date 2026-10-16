@@ -72,7 +72,7 @@ export type InferenceCall = { id: string; sequence: number; run_id: string; requ
   receipts?: { sequence: number; kind: string; recorded_at: number; data: Record<string, unknown> }[] };
 export type InferenceCallPage = { calls: InferenceCall[]; next_before: number | null };
 export type BotMetadata = { id: string; name: string; organization_id: string; created_by: string; authorized_by: string;
-  developer?: { enabled: boolean; repositories: string[]; requesters: string[] };
+  developer?: { enabled: boolean; repositories: string[]; requesters: string[]; issue_self_approvers?: string[]; issue_daily_limit?: number };
   runtime?: { engine: string; models: string[]; local_tools: boolean; online: boolean } | null;
   public_access?: boolean; explicit_topic_ids?: string[];
   delegation_kind?: "administrator" | "personal";
@@ -83,7 +83,7 @@ export type BotModel = { id: string; name: string; bot_id: string; engine: strin
 export type BotRun = { id: string; bot_id: string; bot_name?: string | null; model: string; topic_id: string; status: string; phase: string;
   activity?: { kind: string; label: string; at: number }[];
   context_through_sequence?: number;
-  requested_by?: string; owner_user_id?: string | null;
+  requested_by?: string; owner_user_id?: string | null; approval_by?: "owner" | "requester" | null;
   created_at: number; updated_at: number; output_text: string; error_code: string | null };
 export type SearchResult = Message & { project_name: string; channel_name: string; topic_name: string; topic_kind: TopicKind };
 export type Session = { user_id: string; organization_id?: string; csrf_token?: string };
@@ -107,6 +107,12 @@ export type ModelAttempt = {
   client_id: string; models: string[]; max_completion_tokens?: number | null; context_message_limit: number; through_sequence: number;
   effort?: string | null;
 };
+/**
+ * Browser-only state of a reply request. Without `unconfirmed` the submission
+ * is in flight; with it, the submission failed without a definitive answer and
+ * the server may or may not have accepted it.
+ */
+export type PendingModelAttempt = ModelAttempt & { unconfirmed?: { reason: string } };
 export type ModelRun = {
   timing?: { wait_phase: "local_queue" | "preparing_context" | "provider_wait" | "provider_stream" | "tool_execution" | null;
     queue_wait_ms: number | null; preparation_ms: number | null; provider_elapsed_ms: number | null;
@@ -146,7 +152,74 @@ export function csrfCookie(cookie: string): string | null {
   return null;
 }
 
+/** The ApiError message when a failed response carries no string `detail`. */
+export const UNDESCRIBED_ERROR = "Some fields are invalid. Check the form and try again.";
+
+type SharedRead = { started: number; durable: boolean; promise: Promise<unknown> };
+const sharedReads = new Map<string, SharedRead>();
+
+/** Recently viewed topics' loaded messages and cursors, so a revisit shows content at once and fetches only the delta. */
+export type TopicSnapshot = { messages: Message[]; cursor: number; editCursor: number; older: boolean };
+const topicSnapshots = new Map<string, TopicSnapshot>();
+export const TOPIC_SNAPSHOT_LIMIT = 8;
+export function readTopicSnapshot(key: string): TopicSnapshot | undefined { return topicSnapshots.get(key); }
+export function rememberTopicSnapshot(key: string, snapshot: TopicSnapshot | null): void {
+  topicSnapshots.delete(key);
+  if (!snapshot) return;
+  topicSnapshots.set(key, snapshot);
+  while (topicSnapshots.size > TOPIC_SNAPSHOT_LIMIT) topicSnapshots.delete(topicSnapshots.keys().next().value!);
+}
+
+/** Forget every shared read and topic snapshot, for example when the signed-in account changes. */
+export function clearSharedReads(): void { sharedReads.clear(); topicSnapshots.clear(); }
+
+/** Drop one shared read so the next request fetches it again, for example after an explicit refresh. */
+export function forgetSharedRead(path: string): void { sharedReads.delete(path); }
+
+/** The public model catalog is large and changes slowly; mounted views share one copy for five minutes. */
+export const CATALOG_MAX_AGE = 300_000;
+export const modelCatalog = (organizationId: string, signal?: AbortSignal) =>
+  sharedRequest<OrganizationPrices>(organizationPath(organizationId) + "/model-prices", { maxAge: CATALOG_MAX_AGE, durable: true, signal });
+
+function mutationCompleted(path: string): void {
+  // Topic-scoped writes (messages, read cursors, runs, goals, media) never change organization catalogs.
+  const topicScoped = path.includes("/topics/");
+  for (const [key, entry] of sharedReads) if (!(topicScoped && entry.durable)) sharedReads.delete(key);
+}
+
+function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(new DOMException("The request was aborted.", "AbortError"));
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(new DOMException("The request was aborted.", "AbortError"));
+    signal.addEventListener("abort", abort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
+  });
+}
+
+/**
+ * A GET shared by every mounted view: concurrent callers share one request, and a result started less than
+ * `maxAge` milliseconds ago is reused. Any write through `request` invalidates shared reads (durable catalogs
+ * survive topic-scoped writes); failures are never reused. Private responses stay in memory only.
+ */
+export function sharedRequest<T>(path: string, options: { maxAge: number; signal?: AbortSignal; durable?: boolean }): Promise<T> {
+  const now = Date.now(), existing = sharedReads.get(path);
+  if (existing && now - existing.started <= options.maxAge)
+    return abortable(existing.promise as Promise<T>, options.signal);
+  const entry: SharedRead = { started: now, durable: Boolean(options.durable), promise: request<T>(path) };
+  sharedReads.set(path, entry);
+  entry.promise.catch(() => { if (sharedReads.get(path) === entry) sharedReads.delete(path); });
+  return abortable(entry.promise as Promise<T>, options.signal);
+}
+
 export async function request<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
+  if (options.method && options.method !== "GET") {
+    try { return await send<T>(path, options); } finally { mutationCompleted(path); }
+  }
+  return send<T>(path, options);
+}
+
+async function send<T>(path: string, options: { method?: string; body?: unknown; signal?: AbortSignal }): Promise<T> {
   const headers: Record<string, string> = {};
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.method && options.method !== "GET") {
@@ -159,7 +232,7 @@ export async function request<T>(path: string, options: { method?: string; body?
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new ApiError(response.status, typeof body?.detail === "string" ? body.detail : "Some fields are invalid. Check the form and try again.");
+    throw new ApiError(response.status, typeof body?.detail === "string" ? body.detail : UNDESCRIBED_ERROR);
   }
   return response.status === 204 ? undefined as T : response.json();
 }
@@ -181,12 +254,22 @@ export function authorLabel(message: Message, members: Member[]): string {
 }
 export const aborted = (error: unknown) => error instanceof Error && error.name === "AbortError";
 
+/**
+ * Reconcile messages by ID. A newer revision replaces a message; an equal revision replaces it only when its
+ * content changed. Unchanged messages keep their object identity, and an empty or unchanged delta returns
+ * `existing` itself, so memoized rendering skips them.
+ */
 export function mergeMessages(existing: Message[], incoming: Message[]): Message[] {
   const byId = new Map(existing.map((message) => [message.id, message]));
+  let changed = false;
   for (const message of incoming) {
-    if ((message.revision ?? 0) >= (byId.get(message.id)?.revision ?? 0)) byId.set(message.id, message);
+    const current = byId.get(message.id);
+    const revision = message.revision ?? 0, currentRevision = current?.revision ?? 0;
+    if (!current || revision > currentRevision || revision === currentRevision && JSON.stringify(current) !== JSON.stringify(message)) {
+      byId.set(message.id, message); changed = true;
+    }
   }
-  return [...byId.values()].sort((a, b) => a.sequence - b.sequence);
+  return changed ? [...byId.values()].sort((a, b) => a.sequence - b.sequence) : existing;
 }
 
 export function mentionText(content: string, members: Pick<Member, "id" | "name">[]): string {

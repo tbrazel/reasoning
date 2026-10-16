@@ -128,6 +128,26 @@ The public server serves `organization.html`, not the local-workbench entry
 point, and mounts only the build's assets, license material, and icon. It never
 exposes the installation state directory or local-workbench API. The frontend
 bundle includes Apache-2.0/NOTICE and the bundled font/KaTeX notices.
+The organization entry point is a small shell that checks the session and
+renders sign-in, setup and invitation forms. The signed-in application, with its
+Markdown/KaTeX renderer, loads after the session check succeeds (and starts
+loading when a sign-in form is submitted). The research workspaces, shared
+knowledge, help, model capabilities, usage, and bot and compute administration
+load as separate chunks when first opened, with a loading state and a reload
+action if a chunk cannot be loaded; pointing at the research workspace links
+starts loading that view.
+
+Every build file under `/assets/` is named `<name>-<content hash>.<extension>`.
+Successful responses for such names (200, or 304 on revalidation) carry
+`Cache-Control: public, max-age=31536000, immutable`; every other response,
+including the HTML entry point, API responses, unhashed names and missing
+files, carries `Cache-Control: no-store`. All responses keep `nosniff`, the
+referrer policy and HSTS; a route's own `Content-Security-Policy` (such as the
+sandboxed media content route) is kept, and other responses receive the
+application policy. When `--frontend-dir` is a managed release directory
+(`<releases>/<release-id>/web`), a hashed name missing from the current release
+is served from the `web/assets` directories of the other installed releases, so
+a page loaded before an upgrade can still import its chunks.
 
 `serve` binds to `127.0.0.1:8766` by default. For a public installation, set
 `--public-url https://chat.example.org` and place a same-origin HTTPS reverse
@@ -532,7 +552,7 @@ On narrow screens, the top-bar overflow menu exposes search, people, export and 
 knowledge link; no workspace action is hidden to fit the toolbar.
 The people, topic export, ledger, bibliography and blog controls form one evenly spaced icon group.
 Ledger and bibliography open inside the chat shell in the current tab; the static blog and editor also use same-tab links and shared light/dark theme colors.
-The account menu offers keyboard shortcut help (`?` outside a text field). The sun toggle's default follows the operating system, including live changes; explicit light/dark overrides persist locally and apply to the static blog when its enhancement script is available.
+The account menu offers keyboard shortcut help (`?` outside a text field). The sun toggle's default follows the operating system, including live changes; explicit light/dark overrides persist locally and apply to the static blog when its theme script is available.
 Consecutive alpha-topic messages by the same non-assistant author within five minutes and the same local day share an author header. Date separators label days; continuation timestamps appear on hover or keyboard focus, with full dates in their tooltips.
 Message hover actions appear in order: reaction, message actions (including beta
 forking when authorized), and copy. Copy places only that message's Markdown text
@@ -561,14 +581,42 @@ inline and fenced code unchanged. Author labels and timestamps accompany every
 message. Private uploaded pictures and PDFs render through authenticated attachment
 references; `/attach` opens the file chooser. Raw HTML and external images are not rendered;
 member names inserted by mentions are escaped as Markdown text.
+A message's Markdown and KaTeX output is rendered again only when its displayed
+text changes; refreshes that return no change, composer typing, and model-menu
+updates reuse the rendered transcript.
 
 Visible-tab message polling uses an exclusive sequence cursor every two seconds
-and retries after a network failure. Hierarchy/member/role updates poll every four
-seconds. Message, model-configuration, topic bot metadata/activity, research-control,
-compute-activity, navigation, and presence refreshes slow to at most once per
-thirty seconds in hidden tabs. Returning to a visible tab wakes a scheduled refresh
-immediately. Bot metadata refreshes wait for the previous request to finish before
-scheduling another.
+and retries after a network failure. The topic hierarchy (including unread state)
+refreshes every four seconds; members and the organization list refresh with every
+third hierarchy refresh. Hidden tabs make no scheduled refreshes; returning to a
+visible tab refreshes every paused view immediately. Each refresh waits for the
+previous request to finish before scheduling another.
+
+Activity views slow down while their work is idle and return to their active cadence
+when work appears or the transcript gains a message: beta agent activity (runs,
+agent threads, goal) every second, then up to five seconds; research proposals,
+tool receipts and reviews every 2.5 seconds, then up to ten; topic bot invocations
+every two seconds, then up to eight; topic compute jobs every two seconds, then up
+to ten; and a finished compute job's log and artifacts up to thirty. Each slows only
+after three quiet refreshes (one for a finished compute job). Compute images, policy
+and CPU balance load only while the submission dialog is open. The composer's model
+configuration refreshes every ten seconds and topic bot models every five (beta) or
+ten seconds; the server re-checks policy, membership and admission when a request is
+sent, so display refreshes do not authorize work.
+
+Views share in-memory reads of the same resource: concurrent requests for the
+organization list, hierarchy, members, a topic goal, model or compute configuration,
+or topic bot models use one response, and a recent response is reused within a
+short per-view window (at most a few seconds). The public model catalog
+(`model-prices`) and model benchmarks are shared for five minutes across topics and
+dialogs; "Refresh catalog" fetches them again. Any write invalidates shared reads;
+the catalog and benchmarks survive only writes within a topic. The eight most
+recently viewed topics keep their loaded messages and message/edit cursors in
+memory: revisiting one shows them at once while the poll fetches only newer
+messages and edits, and a 403 or 404 discards the snapshot (and its displayed
+messages if not yet revalidated). Shared reads and topic snapshots are cleared on
+sign-out and session loss, and failures are never reused. Sending, model requests
+and other spending actions are checked by the server when they are made.
 Startup loads health and session state concurrently; an authenticated session can
 open the workspace before health finishes. The topic tree, initial conversation
 page, and bot list render independently of member, edit-history, and permission-tree
@@ -607,7 +655,10 @@ Inference area combining OpenRouter keys with budget and routing policy. Existin
 are listed separately from a closed Add key form, whose fields always represent
 a new credential. Every key can use the current text-to-text catalog without
 an application model whitelist. Destructive
-membership/invitation/key changes require confirmation.
+membership/invitation/key changes require confirmation. Each Administration tab
+loads only its own data when opened (members; invitations and email settings;
+keys and budget; bots; compute). The research blog editor requests its published
+and draft lists at once and shows each as it arrives.
 Creating a beta topic selects its initial model, advertised effort and knowledge
 collections. The channel's `/bot-models` endpoint lists following-access bot
 routes eligible for a new topic; creation rechecks those grants atomically.
